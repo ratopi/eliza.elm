@@ -1,0 +1,36 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Elm
+        uses: jorelali/setup-elm@v5
+        with:
+          elm-version: 0.19.1
+
+      - name: Build Elm application
+        working-directory: ./elm
+        run: elm make src/Main.elm --optimize --output=../public/app.js
+
+      - name: Deploy to public branch
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          publish_branch: public
+          force_orphan: true
+          commit_message: "Deploy Eliza Elm to GitHub Pages"
+
