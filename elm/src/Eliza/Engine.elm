@@ -16,7 +16,7 @@ type alias ElizaState =
     { responseIndices : List ( String, Int )
     , turnCount : Int
     , lastKeyword : String
-    , lastResponse : String
+    , recentResponses : List String  -- Track last N responses to avoid repetition
     }
 
 
@@ -25,7 +25,7 @@ initState =
     { responseIndices = []
     , turnCount = 0
     , lastKeyword = ""
-    , lastResponse = ""
+    , recentResponses = []
     }
 
 
@@ -98,58 +98,40 @@ respond lang userName state input =
                         keyword.decompositions
                             |> List.concatMap .responses
 
-                    responseCount =
-                        List.length responses
-
-                    selectedIndex =
-                        pickIndex responseCount currentIndex newTurn
-
-                    response =
-                        responses
-                            |> List.drop selectedIndex
-                            |> List.head
-                            |> Maybe.withDefault (pickResponse defaultResponses currentIndex newTurn state.lastResponse)
-
                     reflected =
                         applyReflections reflections matchedText
 
+                    rawResponse =
+                        pickNonRecentResponse responses currentIndex newTurn state.recentResponses
+
                     finalResponse =
-                        if String.contains "*" response then
+                        if String.contains "*" rawResponse then
                             let
                                 trimReflected = String.trim reflected
                             in
                             if trimReflected == "" then
-                                String.replace " *" "" response
+                                String.replace " *" "" rawResponse
                                     |> String.replace "* " ""
                                     |> String.replace "*" ""
                             else
-                                String.replace "*" trimReflected response
+                                String.replace "*" trimReflected rawResponse
                         else
-                            response
-
-                    -- If we'd produce the exact same response as last time, advance to next
-                    safeResponse =
-                        if finalResponse == state.lastResponse then
-                            responses
-                                |> List.drop (modBy (max 1 responseCount) (selectedIndex + 1))
-                                |> List.head
-                                |> Maybe.withDefault finalResponse
-                        else
-                            finalResponse
+                            rawResponse
 
                     -- Occasionally prepend user name
                     namedResponse =
-                        if newTurn > 3 && modBy 6 newTurn == 0 then
-                            userName ++ ", " ++ decapitalize safeResponse
+                        if newTurn > 3 && modBy 7 newTurn == 0 then
+                            userName ++ ", " ++ decapitalize finalResponse
                         else
-                            safeResponse
+                            finalResponse
 
                     newState =
-                        state
-                            |> (\s -> updateResponseIndex s key (currentIndex + 1))
-                            |> (\s -> { s | turnCount = newTurn
-                                          , lastKeyword = key
-                                          , lastResponse = namedResponse })
+                        { state
+                            | responseIndices = updateResponseIndices state.responseIndices key (currentIndex + 1)
+                            , turnCount = newTurn
+                            , lastKeyword = key
+                            , recentResponses = addRecent namedResponse state.recentResponses
+                        }
                 in
                 ( namedResponse, newState )
 
@@ -157,11 +139,14 @@ respond lang userName state input =
                 if isVeryShortInput cleanInput then
                     let
                         idx = getResponseIndex state "_short_"
-                        resp = pickResponse shortInputResponses idx newTurn state.lastResponse
+                        resp = pickNonRecentResponse shortInputResponses idx newTurn state.recentResponses
                         newState =
-                            state
-                                |> (\s -> updateResponseIndex s "_short_" (idx + 1))
-                                |> (\s -> { s | turnCount = newTurn, lastKeyword = "_short_", lastResponse = resp })
+                            { state
+                                | responseIndices = updateResponseIndices state.responseIndices "_short_" (idx + 1)
+                                , turnCount = newTurn
+                                , lastKeyword = "_short_"
+                                , recentResponses = addRecent resp state.recentResponses
+                            }
                     in
                     ( resp, newState )
 
@@ -171,20 +156,30 @@ respond lang userName state input =
                             getResponseIndex state "_default_"
 
                         resp =
-                            pickResponse defaultResponses idx newTurn state.lastResponse
+                            pickNonRecentResponse defaultResponses idx newTurn state.recentResponses
 
                         namedResp =
-                            if newTurn > 4 && modBy 5 newTurn == 0 then
+                            if newTurn > 5 && modBy 6 newTurn == 0 then
                                 userName ++ ", " ++ decapitalize resp
                             else
                                 resp
 
                         newState =
-                            state
-                                |> (\s -> updateResponseIndex s "_default_" (idx + 1))
-                                |> (\s -> { s | turnCount = newTurn, lastKeyword = "_default_", lastResponse = namedResp })
+                            { state
+                                | responseIndices = updateResponseIndices state.responseIndices "_default_" (idx + 1)
+                                , turnCount = newTurn
+                                , lastKeyword = "_default_"
+                                , recentResponses = addRecent namedResp state.recentResponses
+                            }
                     in
                     ( namedResp, newState )
+
+
+{-| Add a response to the recent list, keeping only the last 8.
+-}
+addRecent : String -> List String -> List String
+addRecent resp recent =
+    List.take 8 (resp :: recent)
 
 
 decapitalize : String -> String
@@ -212,26 +207,38 @@ pickIndex total currentIdx turn =
         modBy total (currentIdx + (turn * 7 + 3))
 
 
-{-| Pick a response, avoiding the last response if possible.
+{-| Pick a response that hasn't been used recently.
+    Tries up to `total` different indices before giving up.
 -}
-pickResponse : List String -> Int -> Int -> String -> String
-pickResponse responses idx turn lastResp =
+pickNonRecentResponse : List String -> Int -> Int -> List String -> String
+pickNonRecentResponse responses idx turn recentResponses =
     let
         len = List.length responses
-        chosen = pickIndex len idx turn
-        resp =
-            responses
-                |> List.drop chosen
-                |> List.head
-                |> Maybe.withDefault "..."
+        startIdx = pickIndex len idx turn
     in
-    if resp == lastResp && len > 1 then
+    pickNonRecentHelper responses len startIdx 0 recentResponses
+
+
+pickNonRecentHelper : List String -> Int -> Int -> Int -> List String -> String
+pickNonRecentHelper responses len idx attempts recent =
+    if attempts >= len then
+        -- All responses are recent, just pick one
         responses
-            |> List.drop (modBy len (chosen + 1))
+            |> List.drop (modBy (max 1 len) idx)
             |> List.head
-            |> Maybe.withDefault resp
+            |> Maybe.withDefault "..."
     else
-        resp
+        let
+            candidate =
+                responses
+                    |> List.drop (modBy (max 1 len) idx)
+                    |> List.head
+                    |> Maybe.withDefault "..."
+        in
+        if List.member candidate recent then
+            pickNonRecentHelper responses len (idx + 1) (attempts + 1) recent
+        else
+            candidate
 
 
 -- LANGUAGE DATA ACCESS
@@ -308,11 +315,6 @@ getGoodbyeWithName lang name =
 
 -- PATTERN MATCHING
 
-{-| Find the best matching keyword for the given input.
-    Keywords must appear as whole words (word boundary matching).
-    Among same weight, prefer longer (more specific) keywords.
-    Avoids repeating the same keyword as last turn when possible.
--}
 findBestKeyword : List Keyword -> String -> String -> Maybe ( Keyword, String )
 findBestKeyword keywords input lastKeyword =
     let
@@ -357,23 +359,11 @@ findBestKeyword keywords input lastKeyword =
             List.head matches
 
 
-{-| Check if a keyword matches the input.
-    - Multi-word keywords: phrase must appear in the full input.
-    - Short single-word keywords (≤ 3 chars like "ja", "wie", "was"):
-      only match if they appear at the START of the input (first word)
-      to prevent matching filler words mid-sentence.
-    - Longer single-word keywords: must appear as a standalone word.
-    - Also does fuzzy matching for single words (1 edit distance)
-      to handle common typos like "therapeuth" → "therapeut".
--}
 keywordMatchesInput : String -> List String -> String -> Int -> Bool
 keywordMatchesInput keyword inputWords fullInput wordCount =
     if String.contains " " keyword then
-        -- Multi-word keyword: check phrase in full input
         String.contains keyword fullInput
     else if String.length keyword <= 3 then
-        -- Short keywords (ja, wie, was, nie, etc.):
-        -- Only match if it's the first word, or the input is very short (≤ 2 words)
         case List.head inputWords of
             Just firstWord ->
                 if firstWord == keyword then
@@ -386,14 +376,10 @@ keywordMatchesInput keyword inputWords fullInput wordCount =
             Nothing ->
                 False
     else
-        -- Longer single word: exact match or fuzzy match (1 typo)
         List.member keyword inputWords
             || List.any (\w -> isFuzzyMatch keyword w) inputWords
 
 
-{-| Check if two words are within 1 edit distance (simple fuzzy match).
-    Only for words of similar length (±1). Handles insertions/deletions/substitutions.
--}
 isFuzzyMatch : String -> String -> Bool
 isFuzzyMatch a b =
     let
@@ -404,14 +390,11 @@ isFuzzyMatch a b =
     if diff > 1 then
         False
     else if lenA < 4 || lenB < 4 then
-        -- Don't fuzzy match very short words
         False
     else
         editDistance (String.toList a) (String.toList b) 0 <= 1
 
 
-{-| Simple edit distance computation, bailing out early if > 1.
--}
 editDistance : List Char -> List Char -> Int -> Int
 editDistance xs ys errors =
     if errors > 1 then
@@ -431,14 +414,12 @@ editDistance xs ys errors =
                 if x == y then
                     editDistance xr yr errors
                 else
-                    -- Try substitution (cheapest single operation)
                     let
                         sub = editDistance xr yr (errors + 1)
                     in
                     if sub <= 1 then
                         sub
                     else
-                        -- Try insertion/deletion
                         min
                             (editDistance xs yr (errors + 1))
                             (editDistance xr ys (errors + 1))
@@ -569,17 +550,14 @@ getResponseIndex state key =
         |> Maybe.withDefault 0
 
 
-updateResponseIndex : ElizaState -> String -> Int -> ElizaState
-updateResponseIndex state key newIndex =
+updateResponseIndices : List ( String, Int ) -> String -> Int -> List ( String, Int )
+updateResponseIndices indices key newIndex =
     let
         updated =
-            state.responseIndices
+            indices
                 |> List.filter (\( k, _ ) -> k /= key)
-
-        newIndices =
-            ( key, newIndex ) :: updated
     in
-    { state | responseIndices = newIndices }
+    ( key, newIndex ) :: updated
 
 
 -- UTILITIES

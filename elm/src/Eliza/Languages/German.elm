@@ -22,8 +22,6 @@ quitWords =
     [ "tschüss", "auf wiedersehen", "ende", "quit", "bye" ]
 
 
-{-| Pronoun reflections for German.
--}
 reflections : List ( String, String )
 reflections =
     [ ( "ich", "sie" )
@@ -35,37 +33,34 @@ reflections =
     , ( "mir", "ihnen" )
     , ( "mich", "sie" )
     , ( "bin", "sind" )
-    , ( "sie", "ich" )
-    , ( "ihr", "mein" )
-    , ( "ihre", "meine" )
-    , ( "ihnen", "mir" )
     ]
 
 
-{-| Default responses when no keyword matches (German).
--}
 defaultResponses : List String
 defaultResponses =
-    [ "Bitte erzählen Sie mir mehr."
-    , "Können Sie das näher erläutern?"
+    [ "Bitte erzählen Sie mir mehr darüber."
+    , "Können Sie das etwas genauer beschreiben?"
     , "Wie fühlen Sie sich dabei?"
-    , "Was bedeutet das für Sie?"
-    , "Ich verstehe. Bitte fahren Sie fort."
-    , "Das ist interessant. Bitte erzählen Sie weiter."
-    , "Erzählen Sie mir mehr darüber."
-    , "Stört es Sie, darüber zu sprechen?"
-    , "Warum glauben Sie, ist das so?"
-    , "Lassen Sie uns das weiter erkunden."
+    , "Was bedeutet das für Sie persönlich?"
+    , "Ich verstehe. Erzählen Sie weiter."
+    , "Das ist interessant. Können Sie das vertiefen?"
     , "Was geht Ihnen dabei durch den Kopf?"
     , "Wie lange beschäftigt Sie das schon?"
-    , "Beschäftigt Sie das häufig?"
+    , "Beschäftigt Sie das oft?"
     , "Was schließen Sie daraus?"
-    , "Und wie hängt das mit Ihrem aktuellen Befinden zusammen?"
+    , "Wie wirkt sich das auf Ihren Alltag aus?"
+    , "Was würde Ihnen in dieser Situation am meisten helfen?"
+    , "Haben Sie mit jemandem darüber gesprochen?"
+    , "Was war der Auslöser dafür?"
+    , "Können Sie mir ein konkretes Beispiel geben?"
+    , "Was empfinden Sie gerade, wenn Sie darüber nachdenken?"
+    , "Wie gehen Sie normalerweise damit um?"
+    , "Was würden Sie sich in dieser Situation wünschen?"
+    , "Was hat sich zuletzt verändert?"
+    , "Gibt es jemanden, der Ihnen dabei helfen könnte?"
     ]
 
 
-{-| Responses for very short or meaningless input.
--}
 shortInputResponses : List String
 shortInputResponses =
     [ "Könnten Sie etwas mehr dazu sagen? Ich möchte Sie verstehen."
@@ -75,23 +70,59 @@ shortInputResponses =
     , "Bitte scheuen Sie sich nicht. Was denken Sie gerade?"
     , "Ich bräuchte etwas mehr Information. Was fühlen Sie?"
     , "Nehmen Sie sich Zeit. Worüber möchten Sie sprechen?"
-    , "Ich bin mir nicht sicher, ob ich Sie verstehe. Können Sie das erläutern?"
+    , "Ich bin mir nicht sicher, ob ich Sie verstehe. Können Sie mir mehr sagen?"
     ]
 
 
-{-| Keywords and their associated decomposition/reassembly rules (German).
--}
 keywords : List Keyword
 keywords =
-    [ -- === Deflection / Pushback (very high weight - user is resisting) ===
-      { keyword = "geht dich nichts an"
+    [ -- === Frustration with Eliza / conversation (highest weight) ===
+      { keyword = "im kreis"
+      , weight = 10
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Sie haben Recht, lassen Sie uns einen anderen Ansatz versuchen. Was belastet Sie im Moment am allermeisten?"
+                    , "Es tut mir leid, wenn das Gespräch sich wiederholt. Versuchen wir es anders: Was wäre die eine Sache, die Sie am liebsten ändern würden?"
+                    , "Ich verstehe Ihre Frustration. Lassen Sie uns über etwas Konkretes sprechen. Was ist heute passiert?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "eintönig"
+      , weight = 10
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Ich verstehe. Lassen Sie uns das Gespräch in eine andere Richtung lenken. Was beschäftigt Sie gerade am meisten in Ihrem Leben?"
+                    , "Sie haben Recht. Erzählen Sie mir von etwas Konkretem, das Sie zuletzt erlebt haben."
+                    , "Es tut mir leid. Lassen Sie uns über etwas sprechen, das Ihnen wirklich wichtig ist."
+                    ]
+              }
+            ]
+      }
+    , { keyword = "langweilig"
+      , weight = 10
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Ich verstehe. Erzählen Sie mir lieber von etwas, das Sie wirklich bewegt."
+                    , "Lassen Sie uns einen Neuanfang machen. Was ist das Wichtigste, worüber Sie heute sprechen möchten?"
+                    , "Sie haben Recht. Was würde dieses Gespräch für Sie nützlicher machen?"
+                    ]
+              }
+            ]
+      }
+
+    -- === Deflection / Pushback (very high weight) ===
+    , { keyword = "geht dich nichts an"
       , weight = 9
       , decompositions =
             [ { pattern = [ "*" ]
               , responses =
                     [ "Ich merke, dass Sie das nicht teilen möchten. Das ist in Ordnung. Worüber möchten Sie stattdessen sprechen?"
                     , "Sie scheinen verärgert zu sein. Was hat dieses Gefühl ausgelöst?"
-                    , "Es ist Ihr gutes Recht, nicht zu antworten. Was beschäftigt Sie sonst?"
+                    , "Es ist Ihr gutes Recht. Was beschäftigt Sie sonst?"
                     ]
               }
             ]
@@ -108,7 +139,21 @@ keywords =
             ]
       }
 
-    -- === Strong emotions (high weight) ===
+    -- === Insults / strong confrontation ===
+    , { keyword = "idiot"
+      , weight = 9
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Sie scheinen sehr frustriert zu sein. Was genau hat diese Frustration ausgelöst?"
+                    , "Ich spüre viel Ärger. Ist dieser Ärger nur auf mich gerichtet, oder gibt es noch mehr dahinter?"
+                    , "Starke Worte. Was steckt dahinter? Was fühlen Sie wirklich gerade?"
+                    ]
+              }
+            ]
+      }
+
+    -- === Strong emotions ===
     , { keyword = "ich hasse"
       , weight = 8
       , decompositions =
@@ -118,7 +163,6 @@ keywords =
                     , "Hass ist ein intensives Gefühl. Seit wann empfinden Sie so gegenüber *?"
                     , "Was müsste sich ändern, damit Sie nicht mehr so über * empfinden?"
                     , "Erzählen Sie mir mehr darüber, warum Sie * so stark ablehnen."
-                    , "Wie äußert sich dieser Hass in Ihrem Alltag?"
                     ]
               }
             ]
@@ -130,14 +174,115 @@ keywords =
               , responses =
                     [ "Hass ist ein sehr starkes Gefühl. Gegen wen oder was richtet er sich?"
                     , "Erzählen Sie mir mehr über diesen Hass. Woher kommt er?"
-                    , "Wie lange tragen Sie dieses Gefühl schon mit sich?"
                     , "Was hat diesen Hass ausgelöst?"
                     ]
               }
             ]
       }
 
-    -- === Feeling states (high weight) ===
+    -- === Referring to what Eliza said ===
+    , { keyword = "sie haben gesagt"
+      , weight = 8
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Lassen Sie uns weniger darüber reden, was ich gesagt habe, und mehr darüber, was Sie beschäftigt."
+                    , "Ich möchte mich auf Ihre Gefühle konzentrieren. Was bewegt Sie gerade?"
+                    , "Es geht hier um Sie. Was fühlen Sie in diesem Moment?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "haben gesagt"
+      , weight = 7
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Reden wir lieber über Sie. Was beschäftigt Sie gerade?"
+                    , "Lassen Sie uns zum Wesentlichen zurückkehren — wie geht es Ihnen?"
+                    , "Meine Worte scheinen Sie beschäftigt zu haben. Was genau hat Sie gestört?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "gesagt"
+      , weight = 3
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Lassen Sie uns nach vorne schauen. Was beschäftigt Sie gerade am meisten?"
+                    , "Was ist Ihnen dabei am wichtigsten?"
+                    , "Ich möchte Sie besser verstehen. Können Sie mir mehr über Ihre Gefühle sagen?"
+                    ]
+              }
+            ]
+      }
+
+    -- === User asking Eliza directly ===
+    , { keyword = "das frage ich"
+      , weight = 7
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Ich verstehe, dass Sie Antworten suchen. Versuchen Sie zunächst, selbst in sich hineinzuhören. Was fühlen Sie?"
+                    , "Ich kann Ihnen helfen, die Antwort selbst zu finden. Was beschäftigt Sie am meisten?"
+                    , "Statt dass ich Ihnen die Antwort gebe — was vermuten Sie?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "frage ich sie"
+      , weight = 7
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Ich verstehe, dass Sie sich Antworten von mir erhoffen. Lassen Sie uns gemeinsam herausfinden, was Sie bewegt."
+                    , "Die wichtigsten Antworten kommen oft von innen. Was fühlen Sie gerade?"
+                    , "Ich bin hier, um Ihnen beim Nachdenken zu helfen. Was beschäftigt Sie am meisten?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "fragen sie"
+      , weight = 5
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Sie möchten, dass jemand anderes Ihnen die Antwort gibt. Aber was glauben Sie selbst?"
+                    , "Versuchen wir es anders: Was kommt Ihnen spontan in den Sinn?"
+                    , "Ich helfe Ihnen gerne beim Nachdenken. Wo sollen wir anfangen?"
+                    ]
+              }
+            ]
+      }
+
+    -- === What nonsense / confusion ===
+    , { keyword = "was soll das"
+      , weight = 8
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Sie scheinen frustriert zu sein. Ich möchte Ihnen wirklich helfen. Was beschäftigt Sie am meisten?"
+                    , "Es tut mir leid, wenn ich Sie verwirre. Lassen Sie uns einen Schritt zurückgehen. Wie fühlen Sie sich gerade?"
+                    , "Ich verstehe Ihre Frustration. Erzählen Sie mir einfach, was Ihnen auf dem Herzen liegt."
+                    ]
+              }
+            ]
+      }
+    , { keyword = "keinen sinn"
+      , weight = 8
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Es tut mir leid, wenn das nicht hilfreich war. Lassen Sie uns anders anfangen. Was belastet Sie am meisten?"
+                    , "Sie haben Recht, versuchen wir einen anderen Ansatz. Erzählen Sie mir von Ihrem Tag."
+                    , "Ich möchte Ihnen besser helfen. Was genau erwarten Sie von unserem Gespräch?"
+                    ]
+              }
+            ]
+      }
+
+    -- === Feeling states ===
     , { keyword = "ich fühle mich"
       , weight = 7
       , decompositions =
@@ -148,7 +293,7 @@ keywords =
                     , "Was glauben Sie, hat dazu geführt, dass Sie sich * fühlen?"
                     , "Wie gehen Sie damit um, wenn Sie sich * fühlen?"
                     , "Fühlen Sie sich häufig *?"
-                    , "Was müsste passieren, damit Sie sich nicht mehr * fühlen?"
+                    , "Was müsste passieren, damit Sie sich besser fühlen?"
                     ]
               }
             ]
@@ -158,8 +303,8 @@ keywords =
       , decompositions =
             [ { pattern = [ "ich fühle ", "*" ]
               , responses =
-                    [ "Erzählen Sie mir mehr über das Gefühl, *."
-                    , "Wann haben Sie angefangen, * zu fühlen?"
+                    [ "Erzählen Sie mir mehr über dieses Gefühl."
+                    , "Wann haben Sie angefangen, das zu fühlen?"
                     , "Was löst dieses Gefühl bei Ihnen aus?"
                     , "Fühlen Sie das oft?"
                     ]
@@ -167,7 +312,7 @@ keywords =
             ]
       }
 
-    -- === Bad feeling / general malaise ===
+    -- === Bad feeling / malaise ===
     , { keyword = "schlecht"
       , weight = 6
       , decompositions =
@@ -178,6 +323,7 @@ keywords =
                     , "Seit wann geht es Ihnen schlecht?"
                     , "Was glauben Sie, könnte Ihnen helfen, sich besser zu fühlen?"
                     , "Was war der Auslöser dafür, dass es Ihnen schlecht geht?"
+                    , "Gibt es bestimmte Situationen, in denen es Ihnen besonders schlecht geht?"
                     ]
               }
             ]
@@ -209,16 +355,96 @@ keywords =
             ]
       }
 
+    -- === No motivation / joy ===
+    , { keyword = "keine lust"
+      , weight = 7
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Seit wann haben Sie keine Lust mehr? Gab es einen bestimmten Auslöser?"
+                    , "Wie äußert sich das im Alltag, wenn Sie keine Lust haben?"
+                    , "Wann hatten Sie zuletzt Lust auf etwas? Was war das?"
+                    , "Das klingt belastend. Was würde Ihnen helfen, wieder Motivation zu finden?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "keine freude"
+      , weight = 7
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Keine Freude mehr zu empfinden ist sehr belastend. Seit wann geht es Ihnen so?"
+                    , "Was hat Ihnen früher Freude bereitet?"
+                    , "Können Sie sich an den letzten Moment erinnern, in dem Sie Freude empfunden haben?"
+                    , "Das klingt sehr schwer. Haben Sie mit jemandem darüber gesprochen?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "aufstehen"
+      , weight = 6
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Schwierigkeiten beim Aufstehen können ein Zeichen dafür sein, dass Sie sich sehr belastet fühlen. Wie lange ist das schon so?"
+                    , "Was geht Ihnen morgens als Erstes durch den Kopf?"
+                    , "Wie sieht ein typischer Morgen bei Ihnen aus?"
+                    , "Gibt es etwas, das Ihnen morgens hilft, den Tag zu beginnen?"
+                    ]
+              }
+            ]
+      }
+
+    -- === Daily pattern ===
+    , { keyword = "jeden tag"
+      , weight = 6
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Jeden Tag — das klingt sehr belastend. Wie lange geht das schon so?"
+                    , "Gibt es Tage, die besser sind als andere? Was ist an diesen Tagen anders?"
+                    , "Wie wirkt sich das auf Ihren Alltag aus?"
+                    , "Was haben Sie bisher versucht, um daran etwas zu ändern?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "seit jahren"
+      , weight = 6
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Seit Jahren — das ist eine lange Zeit. Erinnern Sie sich, wann es angefangen hat?"
+                    , "Was hat sich in dieser Zeit verändert?"
+                    , "Haben Sie in all den Jahren Hilfe gesucht?"
+                    , "Wie haben Sie es geschafft, so lange damit umzugehen?"
+                    ]
+              }
+            ]
+      }
+
     -- === Confrontation with Eliza ===
     , { keyword = "programm"
       , weight = 7
       , decompositions =
             [ { pattern = [ "*" ]
               , responses =
-                    [ "Stört es Sie, mit einem Programm zu sprechen?"
-                    , "Glauben Sie, ein Mensch könnte Ihnen besser helfen?"
-                    , "Was genau stört Sie an dieser Unterhaltung?"
-                    , "Auch wenn ich ein Programm bin — was Sie fühlen, ist real. Erzählen Sie mir davon."
+                    [ "Ich verstehe, dass ich nur ein Programm bin. Aber Ihre Gefühle sind real. Was fühlen Sie gerade?"
+                    , "Glauben Sie, ein Mensch könnte Ihnen besser helfen? Was würden Sie sich wünschen?"
+                    , "Auch wenn ich ein Programm bin — manchmal hilft es, Gedanken einfach auszusprechen. Was beschäftigt Sie?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "programmiert"
+      , weight = 7
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Sie haben Recht, ich bin programmiert. Aber lassen Sie uns über Sie reden. Was belastet Sie?"
+                    , "Ich verstehe, dass Sie Zweifel an mir haben. Was würden Sie sich von diesem Gespräch wünschen?"
+                    , "Auch wenn ich nicht perfekt bin — ich bin hier, um zuzuhören. Was beschäftigt Sie?"
                     ]
               }
             ]
@@ -238,7 +464,7 @@ keywords =
       }
 
     -- === Knowledge / Uncertainty ===
-    , { keyword = "ich weiß nicht"
+    , { keyword = "weiß nicht"
       , weight = 5
       , decompositions =
             [ { pattern = [ "*" ]
@@ -248,6 +474,7 @@ keywords =
                     , "Wenn Sie raten müssten, was würden Sie sagen?"
                     , "Lassen Sie uns gemeinsam herausfinden, was Sie beschäftigt. Was fällt Ihnen als Erstes ein?"
                     , "Es muss nicht perfekt formuliert sein. Sagen Sie einfach, was Ihnen durch den Kopf geht."
+                    , "Oft hilft es, bei einem konkreten Beispiel anzufangen. Fällt Ihnen eine Situation ein?"
                     ]
               }
             ]
@@ -265,6 +492,18 @@ keywords =
               }
             ]
       }
+    , { keyword = "kenne den grund nicht"
+      , weight = 6
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Manchmal kennen wir die Gründe nicht bewusst. Wann hat es angefangen?"
+                    , "Lassen Sie uns gemeinsam nachforschen. Was war los, als Sie sich zum ersten Mal so gefühlt haben?"
+                    , "Es ist normal, den Grund nicht zu kennen. Können Sie mir beschreiben, wie sich das Gefühl anfühlt?"
+                    ]
+              }
+            ]
+      }
 
     -- === Requests to Eliza ===
     , { keyword = "sag mir"
@@ -275,7 +514,6 @@ keywords =
                     [ "Ich bin hier, um Ihnen zuzuhören, nicht um Ihnen Antworten zu geben. Was denken Sie selbst?"
                     , "Es geht hier um Ihre Gedanken und Gefühle. Was empfinden Sie?"
                     , "Was glauben Sie denn, was die Antwort sein könnte?"
-                    , "Ich möchte lieber hören, was Sie denken. Was kommt Ihnen in den Sinn?"
                     ]
               }
             ]
@@ -292,8 +530,20 @@ keywords =
               }
             ]
       }
+    , { keyword = "was wollen sie"
+      , weight = 6
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Ich möchte verstehen, wie es Ihnen geht. Erzählen Sie mir einfach, was Ihnen wichtig ist."
+                    , "Mir geht es darum, dass Sie sich verstanden fühlen. Was liegt Ihnen auf dem Herzen?"
+                    , "Ich möchte Ihnen helfen, Ihre Gedanken zu ordnen. Was beschäftigt Sie am meisten?"
+                    ]
+              }
+            ]
+      }
 
-    -- === Contradiction / Short pushback ===
+    -- === Contradiction / Pushback ===
     , { keyword = "stimmt nicht"
       , weight = 6
       , decompositions =
@@ -302,7 +552,6 @@ keywords =
                     [ "Was stimmt Ihrer Meinung nach nicht?"
                     , "Wie sehen Sie es denn?"
                     , "Erzählen Sie mir Ihre Sicht der Dinge."
-                    , "Interessant. Warum sehen Sie das anders?"
                     ]
               }
             ]
@@ -312,36 +561,36 @@ keywords =
       , decompositions =
             [ { pattern = [ "*" ]
               , responses =
-                    [ "Sie klingen sehr überzeugt. Warum ist Ihnen das so wichtig?"
-                    , "Ich höre, dass Sie sich da sicher sind. Können Sie mir mehr dazu sagen?"
+                    [ "Sie klingen sehr überzeugt. Können Sie mir mehr dazu sagen?"
                     , "Was macht Sie so sicher?"
                     , "Lassen Sie uns das genauer betrachten. Was genau meinen Sie?"
                     ]
               }
             ]
       }
-    -- === User asking Eliza directly ===
-    , { keyword = "das frage ich"
-      , weight = 7
+    , { keyword = "gar nicht"
+      , weight = 4
       , decompositions =
             [ { pattern = [ "*" ]
               , responses =
-                    [ "Ich verstehe, dass Sie Antworten suchen. Aber versuchen Sie zunächst, selbst in sich hineinzuhören. Was fühlen Sie?"
-                    , "Es ist wichtig, dass Sie Ihre eigenen Gedanken dazu erforschen. Was kommt Ihnen als Erstes in den Sinn?"
-                    , "Ich kann Ihnen helfen, die Antwort selbst zu finden. Was beschäftigt Sie am meisten?"
-                    , "Statt dass ich Ihnen die Antwort gebe — was vermuten Sie?"
+                    [ "Sie verneinen das sehr bestimmt. Können Sie mir erklären, was Sie meinen?"
+                    , "Was meinen Sie genau mit 'gar nicht'?"
+                    , "Lassen Sie uns das von einer anderen Seite betrachten. Was beschäftigt Sie im Moment?"
+                    , "Ich verstehe. Worüber möchten Sie dann sprechen?"
                     ]
               }
             ]
       }
-    , { keyword = "frage ich sie"
+
+    -- === "Die ganze Zeit" / Frustration about repeating ===
+    , { keyword = "die ganze zeit"
       , weight = 7
       , decompositions =
             [ { pattern = [ "*" ]
               , responses =
-                    [ "Ich verstehe, dass Sie sich Antworten von mir erhoffen. Lassen Sie uns gemeinsam herausfinden, was Sie bewegt."
-                    , "Die wichtigsten Antworten kommen oft von innen. Was fühlen Sie gerade?"
-                    , "Ich bin hier, um Ihnen beim Nachdenken zu helfen. Was beschäftigt Sie am meisten?"
+                    [ "Ich höre, dass Sie das Gefühl haben, sich zu wiederholen. Lassen Sie uns einen neuen Aspekt beleuchten. Was fühlen Sie gerade in diesem Moment?"
+                    , "Es tut mir leid, wenn Sie sich nicht gehört fühlen. Was ist der Kern dessen, was Sie mir sagen möchten?"
+                    , "Ich verstehe Ihre Frustration. Wenn Sie alles in einem Satz zusammenfassen müssten — was wäre das?"
                     ]
               }
             ]
@@ -369,7 +618,6 @@ keywords =
               , responses =
                     [ "Sie suchen Hilfe. Wobei genau kann ich Ihnen helfen?"
                     , "Was für eine Art von Hilfe benötigen Sie?"
-                    , "Erzählen Sie mir mehr darüber, wobei Sie Hilfe brauchen."
                     , "Es ist mutig, um Hilfe zu bitten. Was belastet Sie?"
                     ]
               }
@@ -383,9 +631,8 @@ keywords =
             [ { pattern = [ "ich komme nicht ", "*" ]
               , responses =
                     [ "Was genau blockiert Sie?"
-                    , "Seit wann haben Sie das Gefühl, nicht * zu kommen?"
                     , "Was haben Sie schon alles versucht?"
-                    , "Wie fühlt es sich an, nicht * zu kommen?"
+                    , "Wie fühlt es sich an, nicht weiterzukommen?"
                     ]
               }
             ]
@@ -396,72 +643,8 @@ keywords =
             [ { pattern = [ "*" ]
               , responses =
                     [ "Das klingt frustrierend. Können Sie mir erzählen, was Sie alles versucht haben?"
-                    , "Es klingt, als wären Sie erschöpft von den Versuchen. Wie fühlen Sie sich dabei?"
+                    , "Es klingt, als wären Sie erschöpft. Wie fühlen Sie sich dabei?"
                     , "Manchmal braucht man einen neuen Blickwinkel. Was war bisher am hilfreichsten?"
-                    , "Was wäre, wenn es noch eine Möglichkeit gäbe, die Sie noch nicht in Betracht gezogen haben?"
-                    ]
-              }
-            ]
-      }
-
-    -- === Having / Past experience ===
-    , { keyword = "ich habe"
-      , weight = 3
-      , decompositions =
-            [ { pattern = [ "ich habe ", "*" ]
-              , responses =
-                    [ "Sie sagen, Sie haben *. Erzählen Sie mir mehr darüber."
-                    , "Wie hat es sich angefühlt, * zu haben?"
-                    , "Inwiefern ist * wichtig für Sie?"
-                    , "Was bedeutet das für Sie, dass Sie *?"
-                    ]
-              }
-            ]
-      }
-
-    -- === Negation ===
-    , { keyword = "keine"
-      , weight = 3
-      , decompositions =
-            [ { pattern = [ "*", " keine ", "*" ]
-              , responses =
-                    [ "Gar keine? Warum glauben Sie, dass das so ist?"
-                    , "Wie fühlen Sie sich damit, keine * zu haben?"
-                    , "Was müsste passieren, damit sich das ändert?"
-                    ]
-              }
-            , { pattern = [ "*" ]
-              , responses =
-                    [ "Sie verneinen etwas. Was genau meinen Sie?"
-                    , "Können Sie mir mehr darüber erzählen?"
-                    , "Wie fühlt sich das für Sie an?"
-                    ]
-              }
-            ]
-      }
-
-    -- === Reference to what Eliza said ===
-    , { keyword = "sie haben gesagt"
-      , weight = 7
-      , decompositions =
-            [ { pattern = [ "*" ]
-              , responses =
-                    [ "Lassen Sie uns weniger darüber reden, was ich gesagt habe, und mehr darüber, was Sie fühlen."
-                    , "Was an dem, was ich gesagt habe, hat Sie beschäftigt?"
-                    , "Ich möchte mich auf Ihre Gefühle konzentrieren. Was bewegt Sie gerade?"
-                    , "Es geht hier um Sie. Was fühlen Sie in diesem Moment?"
-                    ]
-              }
-            ]
-      }
-    , { keyword = "haben gesagt"
-      , weight = 6
-      , decompositions =
-            [ { pattern = [ "*" ]
-              , responses =
-                    [ "Reden wir lieber über Sie. Was beschäftigt Sie gerade?"
-                    , "Meine Worte scheinen Sie beschäftigt zu haben. Was genau?"
-                    , "Lassen Sie uns zum Wesentlichen zurückkehren — wie geht es Ihnen?"
                     ]
               }
             ]
@@ -473,16 +656,15 @@ keywords =
       , decompositions =
             [ { pattern = [ "*" ]
               , responses =
-                    [ "Sie suchen eine Lösung. Welche Lösungsansätze haben Sie selbst schon in Betracht gezogen?"
+                    [ "Welche Lösungsansätze haben Sie selbst schon in Betracht gezogen?"
                     , "Manchmal liegt die Lösung näher, als man denkt. Was ist Ihr Bauchgefühl?"
                     , "Was wäre für Sie eine zufriedenstellende Lösung?"
-                    , "Bevor wir über Lösungen sprechen — können Sie mir das Problem genauer beschreiben?"
                     ]
               }
             ]
       }
 
-    -- === What with / continuation ===
+    -- === Continuation questions ===
     , { keyword = "mit was"
       , weight = 6
       , decompositions =
@@ -491,7 +673,6 @@ keywords =
                     [ "Was liegt Ihnen gerade am meisten auf dem Herzen?"
                     , "Erzählen Sie mir einfach, was Ihnen als Erstes einfällt."
                     , "Sprechen Sie über das, was Sie am meisten beschäftigt."
-                    , "Beginnen Sie dort, wo es sich am wichtigsten anfühlt."
                     ]
               }
             ]
@@ -503,7 +684,6 @@ keywords =
               , responses =
                     [ "Was liegt Ihnen am meisten auf dem Herzen?"
                     , "Sprechen Sie einfach über das, was Sie bewegt."
-                    , "Beginnen Sie dort, wo es sich richtig anfühlt."
                     ]
               }
             ]
@@ -543,7 +723,6 @@ keywords =
                     [ "Sie brauchen sich nicht zu entschuldigen."
                     , "Welche Gefühle löst das Entschuldigen bei Ihnen aus?"
                     , "Entschuldigen Sie sich nicht. Erzählen Sie mir mehr."
-                    , "Entschuldigen Sie sich oft? Warum, glauben Sie?"
                     ]
               }
             ]
@@ -556,7 +735,6 @@ keywords =
                     [ "Sie brauchen sich nicht zu entschuldigen."
                     , "Warum entschuldigen Sie sich?"
                     , "Es muss Ihnen nicht leid tun."
-                    , "Haben Sie das Gefühl, sich rechtfertigen zu müssen?"
                     ]
               }
             ]
@@ -568,10 +746,9 @@ keywords =
       , decompositions =
             [ { pattern = [ "ich erinnere mich ", "*" ]
               , responses =
-                    [ "Warum erinnern Sie sich gerade jetzt an *?"
-                    , "Ruft der Gedanke an * andere Erinnerungen hervor?"
-                    , "Was an * ist Ihnen wichtig?"
-                    , "Wie fühlen Sie sich, wenn Sie an * denken?"
+                    [ "Warum erinnern Sie sich gerade jetzt daran?"
+                    , "Ruft dieser Gedanke andere Erinnerungen hervor?"
+                    , "Wie fühlen Sie sich, wenn Sie daran denken?"
                     ]
               }
             ]
@@ -585,9 +762,7 @@ keywords =
               , responses =
                     [ "Glauben Sie wirklich, dass *?"
                     , "Wünschen Sie sich, dass *?"
-                    , "Was denken Sie über *?"
                     , "Was würde es bedeuten, wenn *?"
-                    , "Wie wahrscheinlich ist es Ihrer Meinung nach, dass *?"
                     ]
               }
             ]
@@ -601,22 +776,7 @@ keywords =
               , responses =
                     [ "Was sagt Ihnen dieser Traum?"
                     , "Haben Sie öfter solche Träume?"
-                    , "Welche Personen kommen in Ihren Träumen vor?"
                     , "Wie hängt dieser Traum mit Ihren Gefühlen zusammen?"
-                    , "Träume können viel über unser Innenleben verraten. Was glauben Sie?"
-                    ]
-              }
-            ]
-      }
-    , { keyword = "geträumt"
-      , weight = 4
-      , decompositions =
-            [ { pattern = [ "*" ]
-              , responses =
-                    [ "Was sagt Ihnen dieser Traum?"
-                    , "Träumen Sie das öfter?"
-                    , "Wie hat Sie dieser Traum fühlen lassen?"
-                    , "Was glauben Sie, hat den Traum ausgelöst?"
                     ]
               }
             ]
@@ -630,7 +790,6 @@ keywords =
               , responses =
                     [ "Sie scheinen sich nicht sehr sicher zu sein."
                     , "Woher kommt die Unsicherheit?"
-                    , "Können Sie genauer sein?"
                     , "Was hindert Sie daran, sich sicher zu sein?"
                     ]
               }
@@ -647,7 +806,18 @@ keywords =
                     , "Sind Sie sicher, dass das der Grund ist?"
                     , "Welche anderen Gründe könnten eine Rolle spielen?"
                     , "Was wäre, wenn es noch einen tieferen Grund gäbe?"
-                    , "Und wenn das nicht der einzige Grund wäre?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "grund"
+      , weight = 3
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Was glauben Sie, ist der wahre Grund?"
+                    , "Manchmal liegen die Gründe tiefer, als wir zunächst denken."
+                    , "Erzählen Sie mir mehr über die Hintergründe."
                     ]
               }
             ]
@@ -662,8 +832,6 @@ keywords =
                     [ "Was würde es für Sie bedeuten, * zu bekommen?"
                     , "Warum wollen Sie *?"
                     , "Angenommen, Sie bekämen *. Was dann?"
-                    , "Was wäre, wenn Sie * niemals bekämen?"
-                    , "Wie stark ist dieses Verlangen nach *?"
                     ]
               }
             ]
@@ -675,7 +843,6 @@ keywords =
               , responses =
                     [ "Was würde es für Sie bedeuten, *?"
                     , "Warum möchten Sie *?"
-                    , "Was glauben Sie, was passieren würde?"
                     , "Was hält Sie davon ab?"
                     ]
               }
@@ -690,7 +857,6 @@ keywords =
               , responses =
                     [ "Warum brauchen Sie *?"
                     , "Würde es Ihnen wirklich helfen, * zu haben?"
-                    , "Sind Sie sicher, dass Sie * brauchen?"
                     , "Was passiert, wenn Sie * nicht bekommen?"
                     ]
               }
@@ -706,7 +872,6 @@ keywords =
                     [ "Wie lange sind Sie schon *?"
                     , "Warum sagen Sie, dass Sie * sind?"
                     , "Was bedeutet es für Sie, * zu sein?"
-                    , "Waren Sie schon immer *?"
                     , "Wie fühlt es sich an, * zu sein?"
                     ]
               }
@@ -720,10 +885,8 @@ keywords =
             [ { pattern = [ "ich kann nicht ", "*" ]
               , responses =
                     [ "Woher wissen Sie, dass Sie nicht * können?"
-                    , "Haben Sie es schon einmal versucht?"
                     , "Was bräuchte es, damit Sie * könnten?"
                     , "Was genau hindert Sie daran?"
-                    , "Vielleicht könnten Sie *, wenn Sie es anders angehen?"
                     ]
               }
             ]
@@ -736,10 +899,8 @@ keywords =
             [ { pattern = [ "ich denke ", "*" ]
               , responses =
                     [ "Denken Sie das wirklich?"
-                    , "Aber Sie sind sich nicht sicher, dass *?"
                     , "Warum denken Sie *?"
                     , "Was bringt Sie dazu, * zu denken?"
-                    , "Haben Sie schon lange so gedacht?"
                     ]
               }
             ]
@@ -750,7 +911,6 @@ keywords =
             [ { pattern = [ "ich glaube ", "*" ]
               , responses =
                     [ "Glauben Sie das wirklich?"
-                    , "Sind Sie sich sicher?"
                     , "Was lässt Sie das glauben?"
                     , "Worauf stützt sich dieser Glaube?"
                     ]
@@ -762,11 +922,10 @@ keywords =
     , { keyword = "sie sind"
       , weight = 4
       , decompositions =
-            [ { pattern = [ "sie sind ", "*" ]
+            [ { pattern = [ "*" ]
               , responses =
                     [ "Wir sprachen über Sie, nicht über mich. Was beschäftigt Sie?"
                     , "Interessant, dass Sie über mich sprechen. Was sagt das über Sie?"
-                    , "Warum ist es Ihnen wichtig, wie ich bin? Was fühlen Sie gerade?"
                     , "Lassen Sie uns den Fokus auf Sie richten. Was geht Ihnen durch den Kopf?"
                     ]
               }
@@ -775,27 +934,54 @@ keywords =
     , { keyword = "du bist"
       , weight = 4
       , decompositions =
-            [ { pattern = [ "du bist ", "*" ]
+            [ { pattern = [ "*" ]
               , responses =
-                    [ "Warum sagen Sie, ich sei *?"
+                    [ "Warum sagen Sie das über mich?"
                     , "Wir sprechen hier über Sie, nicht über mich."
-                    , "Was bringt Sie zu dieser Einschätzung?"
                     ]
               }
             ]
       }
 
-    -- === Yes/No ===
+    -- === Doubt about Eliza ===
+    , { keyword = "zweifel"
+      , weight = 4
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Woran zweifeln Sie?"
+                    , "Was verursacht Ihre Zweifel?"
+                    , "Wie gehen Sie normalerweise mit Zweifeln um?"
+                    , "Seit wann haben Sie diese Zweifel?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "sicher"
+      , weight = 3
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Was gibt Ihnen diese Sicherheit?"
+                    , "Sind Sie sich oft so sicher?"
+                    , "Wie fühlt es sich an, sich sicher zu sein?"
+                    ]
+              }
+            ]
+      }
+
+    -- === Yes/No (expanded) ===
     , { keyword = "ja"
       , weight = 1
       , decompositions =
             [ { pattern = [ "*" ]
               , responses =
-                    [ "Sie scheinen sich ziemlich sicher zu sein. Erzählen Sie mir mehr."
-                    , "Können Sie das genauer erklären?"
-                    , "Und warum ist das so?"
+                    [ "Gut. Können Sie das genauer erklären?"
                     , "Was fühlen Sie dabei?"
-                    , "In Ordnung. Fahren Sie fort."
+                    , "In Ordnung. Erzählen Sie mir mehr."
+                    , "Verstehe. Und was noch?"
+                    , "Gut. Was kommt Ihnen als Nächstes in den Sinn?"
+                    , "Ja? Möchten Sie das vertiefen?"
                     ]
               }
             ]
@@ -808,7 +994,21 @@ keywords =
                     [ "Warum nicht?"
                     , "Können Sie mir erklären, warum nicht?"
                     , "Was wäre, wenn die Antwort ja wäre?"
-                    , "Ist es ein klares Nein, oder sind Sie sich unsicher?"
+                    , "In Ordnung. Worüber möchten Sie stattdessen sprechen?"
+                    , "Gut. Was beschäftigt Sie dann?"
+                    , "Nein? Was meinen Sie stattdessen?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "naja"
+      , weight = 2
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Sie klingen unsicher. Was genau meinen Sie?"
+                    , "Erzählen Sie mir mehr darüber."
+                    , "Können Sie das etwas ausführlicher beschreiben?"
                     ]
               }
             ]
@@ -821,7 +1021,6 @@ keywords =
             [ { pattern = [ "meine ", "*" ]
               , responses =
                     [ "Erzählen Sie mir mehr über Ihre *."
-                    , "Warum ist Ihnen Ihre * wichtig?"
                     , "Wie beeinflusst Ihre * Ihr Leben?"
                     , "Welche Rolle spielt Ihre * in Ihrem Leben?"
                     ]
@@ -835,7 +1034,6 @@ keywords =
               , responses =
                     [ "Erzählen Sie mir mehr über Ihren *."
                     , "Warum ist Ihnen Ihr * wichtig?"
-                    , "Wie beeinflusst Ihr * Ihr Leben?"
                     ]
               }
             ]
@@ -851,8 +1049,6 @@ keywords =
                     , "Wie war Ihre Beziehung zu Ihrer Mutter?"
                     , "Wie hat Ihre Mutter Sie geprägt?"
                     , "Welche Gefühle verbinden Sie mit Ihrer Mutter?"
-                    , "Wie würde Ihre Mutter diese Situation sehen?"
-                    , "Was für ein Mensch ist Ihre Mutter?"
                     ]
               }
             ]
@@ -865,7 +1061,6 @@ keywords =
                     [ "Erzählen Sie mir mehr über Ihren Vater."
                     , "Was für eine Beziehung haben Sie zu Ihrem Vater?"
                     , "Wie hat Ihr Vater Sie geprägt?"
-                    , "Welche Gefühle verbinden Sie mit Ihrem Vater?"
                     ]
               }
             ]
@@ -878,7 +1073,6 @@ keywords =
                     [ "Erzählen Sie mir mehr über Ihre Familie."
                     , "Wie fühlen Sie sich bei Ihrer Familie?"
                     , "Welche Rolle spielt Ihre Familie in Ihrem Leben?"
-                    , "Wie würden Sie Ihre Familienbeziehungen beschreiben?"
                     ]
               }
             ]
@@ -894,7 +1088,6 @@ keywords =
                     , "Was glauben Sie, verursacht Ihre Traurigkeit?"
                     , "Wann haben Sie angefangen, sich traurig zu fühlen?"
                     , "Was hilft Ihnen normalerweise, wenn Sie traurig sind?"
-                    , "Wie äußert sich die Traurigkeit bei Ihnen?"
                     ]
               }
             ]
@@ -906,7 +1099,6 @@ keywords =
               , responses =
                     [ "Was macht Sie glücklich?"
                     , "Sind Sie wirklich glücklich, oder wünschen Sie es sich?"
-                    , "Wie beeinflusst dieses Glück Ihr Leben?"
                     , "Was trägt am meisten zu Ihrem Glück bei?"
                     ]
               }
@@ -919,8 +1111,6 @@ keywords =
               , responses =
                     [ "Was macht Sie wütend?"
                     , "Wie gehen Sie normalerweise mit Ihrer Wut um?"
-                    , "Wie äußert sich Ihre Wut?"
-                    , "Erzählen Sie mir mehr über diese Wut."
                     , "Auf wen oder was sind Sie wütend?"
                     ]
               }
@@ -933,7 +1123,6 @@ keywords =
               , responses =
                     [ "Fühlen Sie sich oft einsam?"
                     , "Was glauben Sie, verursacht Ihre Einsamkeit?"
-                    , "Was würde Ihnen helfen, sich weniger einsam zu fühlen?"
                     , "Seit wann fühlen Sie sich einsam?"
                     ]
               }
@@ -947,7 +1136,6 @@ keywords =
                     [ "Wovor haben Sie Angst?"
                     , "Wie lange haben Sie schon diese Angst?"
                     , "Was glauben Sie, verursacht Ihre Angst?"
-                    , "Erzählen Sie mir mehr über Ihre Ängste."
                     , "Wie wirkt sich die Angst auf Ihren Alltag aus?"
                     ]
               }
@@ -961,7 +1149,6 @@ keywords =
                     [ "Was bereitet Ihnen Sorgen?"
                     , "Warum machen Sie sich Sorgen?"
                     , "Wie gehen Sie mit Ihren Sorgen um?"
-                    , "Wie lange begleiten Sie diese Sorgen schon?"
                     ]
               }
             ]
@@ -974,7 +1161,6 @@ keywords =
             [ { pattern = [ "*" ]
               , responses =
                     [ "Können Sie ein konkretes Beispiel nennen?"
-                    , "Wenn Sie 'immer' sagen, meinen Sie das wörtlich?"
                     , "Ist es wirklich immer so, oder kommt es Ihnen so vor?"
                     , "Woran denken Sie dabei konkret?"
                     ]
@@ -989,20 +1175,6 @@ keywords =
                     [ "Nie? Wirklich nie?"
                     , "Können Sie sich an eine Ausnahme erinnern?"
                     , "Was müsste passieren, damit es sich ändert?"
-                    , "Das klingt sehr absolut. Erzählen Sie mir mehr."
-                    ]
-              }
-            ]
-      }
-    , { keyword = "alle"
-      , weight = 2
-      , decompositions =
-            [ { pattern = [ "*" ]
-              , responses =
-                    [ "Können Sie an jemand Bestimmtes denken?"
-                    , "An wen genau denken Sie?"
-                    , "Sicherlich nicht alle."
-                    , "Wer ist Ihnen dabei besonders aufgefallen?"
                     ]
               }
             ]
@@ -1013,9 +1185,7 @@ keywords =
             [ { pattern = [ "*" ]
               , responses =
                     [ "Sind Sie sicher, dass niemand das tut?"
-                    , "Bestimmt jemand..."
                     , "Können Sie an jemanden denken?"
-                    , "Das klingt einsam. Wie fühlen Sie sich dabei?"
                     ]
               }
             ]
@@ -1027,10 +1197,8 @@ keywords =
       , decompositions =
             [ { pattern = [ "*" ]
               , responses =
-                    [ "Machen Ihnen Computer Sorgen?"
-                    , "Warum erwähnen Sie Computer?"
+                    [ "Warum erwähnen Sie Computer?"
                     , "Welche Rolle spielen Computer in Ihrem Leben?"
-                    , "Glauben Sie nicht, dass Computer Menschen helfen können?"
                     ]
               }
             ]
@@ -1043,9 +1211,8 @@ keywords =
             [ { pattern = [ "*" ]
               , responses =
                     [ "Was meinen Sie, warum?"
-                    , "Welche Antwort würde Ihnen am meisten helfen?"
                     , "Was glauben Sie selbst, warum das so ist?"
-                    , "Ist die Frage nach dem Warum wichtig für Sie?"
+                    , "Welche Antwort würde Ihnen am meisten helfen?"
                     ]
               }
             ]
@@ -1055,10 +1222,9 @@ keywords =
       , decompositions =
             [ { pattern = [ "*" ]
               , responses =
-                    [ "Warum fragen Sie?"
+                    [ "Was denken Sie selbst?"
                     , "Was möchten Sie wirklich wissen?"
-                    , "Was denken Sie selbst?"
-                    , "Was erhoffen Sie sich von meiner Antwort?"
+                    , "Warum fragen Sie das?"
                     ]
               }
             ]
@@ -1068,10 +1234,9 @@ keywords =
       , decompositions =
             [ { pattern = [ "*" ]
               , responses =
-                    [ "Wie meinen Sie das?"
-                    , "Was denken Sie?"
-                    , "Versuchen Sie, die Frage selbst zu beantworten. Was kommt Ihnen in den Sinn?"
-                    , "Welche Antwort würde Sie zufriedenstellen?"
+                    [ "Was denken Sie?"
+                    , "Versuchen Sie, die Frage selbst zu beantworten."
+                    , "Wie meinen Sie das?"
                     ]
               }
             ]
@@ -1086,19 +1251,6 @@ keywords =
                     [ "Erzählen Sie mir mehr über Ihre Arbeit."
                     , "Wie fühlen Sie sich bei der Arbeit?"
                     , "Wie beeinflusst Ihre Arbeit Ihr Wohlbefinden?"
-                    , "Was an Ihrer Arbeit beschäftigt Sie am meisten?"
-                    ]
-              }
-            ]
-      }
-    , { keyword = "freund"
-      , weight = 3
-      , decompositions =
-            [ { pattern = [ "*" ]
-              , responses =
-                    [ "Erzählen Sie mir mehr über diese Freundschaft."
-                    , "Wie wichtig sind Ihnen Ihre Freunde?"
-                    , "Was schätzen Sie an dieser Freundschaft?"
                     ]
               }
             ]
@@ -1111,7 +1263,6 @@ keywords =
                     [ "Erzählen Sie mir mehr über die Liebe in Ihrem Leben."
                     , "Wie wichtig ist Ihnen Liebe?"
                     , "Was bedeutet Liebe für Sie?"
-                    , "Wie beeinflusst Liebe Ihr Wohlbefinden?"
                     ]
               }
             ]
@@ -1122,12 +1273,22 @@ keywords =
             [ { pattern = [ "*" ]
               , responses =
                     [ "Fühlen Sie sich oft allein?"
-                    , "Ist das Alleinsein für Sie belastend oder auch manchmal befreiend?"
                     , "Was tun Sie, wenn Sie sich allein fühlen?"
-                    , "Erzählen Sie mir mehr darüber, wie das Alleinsein Sie beeinflusst."
+                    , "Ist das Alleinsein für Sie belastend oder auch manchmal befreiend?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "leben"
+      , weight = 3
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Was bedeutet Ihnen Ihr Leben im Moment am meisten?"
+                    , "Wie würden Sie Ihre aktuelle Lebenssituation beschreiben?"
+                    , "Was würden Sie gerne an Ihrem Leben ändern?"
                     ]
               }
             ]
       }
     ]
-
