@@ -184,17 +184,12 @@
         }
 
         /* ===== Header ===== */
-        .app-header {
-            background: var(--bg-card);
-            border-bottom: 1px solid var(--border);
-            padding: 16px 24px;
-            flex-shrink: 0;
-        }
 
         .header-content {
             display: flex;
             align-items: center;
             gap: 16px;
+            flex: 1;
         }
 
         .header-content h1 {
@@ -210,6 +205,61 @@
         .subtitle {
             color: var(--text-muted);
             font-size: 0.9rem;
+        }
+
+        .app-header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .github-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .github-link:hover {
+            color: var(--text);
+        }
+
+        .github-link svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .setup-footer {
+            text-align: center;
+            margin-top: 12px;
+        }
+
+        .setup-footer a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.2s ease;
+        }
+
+        .setup-footer a:hover {
+            color: var(--text);
+        }
+
+        .setup-footer svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
         }
 
         /* ===== Chat Container ===== */

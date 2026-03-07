@@ -1,7 +1,7 @@
 module Eliza.Languages.German exposing (greeting, goodbye, keywords, reflections, defaultResponses, shortInputResponses, quitWords)
 
-{-| German language data for the Eliza chatbot.
-    Based on the classic Weizenbaum ELIZA script, adapted for German.
+{-| German language data for the ELIZA-inspired chatbot.
+    Keywords, reflections, and responses for German conversations.
 -}
 
 import Eliza.Types exposing (Keyword, Rule)

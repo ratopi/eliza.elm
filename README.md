@@ -1,13 +1,18 @@
- # Eliza Elm
+# Eliza.elm
 
-A classic [Weizenbaum ELIZA](https://en.wikipedia.org/wiki/ELIZA) chatbot implemented as a standalone, serverless web application using [Elm](https://elm-lang.org/).
+An [ELIZA](https://en.wikipedia.org/wiki/ELIZA)-inspired chatbot implemented as a standalone, serverless web application using [Elm](https://elm-lang.org/).
+
+Inspired by Joseph Weizenbaum's classic 1966 ELIZA program, this implementation extends the original concept with fuzzy keyword matching, intelligent clause limiting, response repetition avoidance, and a modern chat UI.
 
 ## Features
 
-- **Classic ELIZA conversation engine** — Pattern matching and response generation based on the original Weizenbaum algorithm
-- **Multi-language support** — English and German out of the box, easily extensible to more languages
+- **ELIZA-inspired conversation engine** — Keyword-weighted pattern matching and response generation, inspired by the original Weizenbaum algorithm
+- **Fuzzy keyword matching** — Tolerates common typos (edit distance ≤ 1)
+- **Intelligent wildcard capture** — Limits captured text to the first meaningful clause, preventing nonsensical reflections in multi-sentence input
+- **Response repetition avoidance** — Tracks the last 8 responses to avoid repeating itself
+- **Multi-language support** — English and German out of the box, easily extensible
 - **Personalized sessions** — Users enter their name and select a language before chatting; Eliza addresses them by name
-- **Modern UI** — Clean, dark-themed chat interface with responsive design
+- **Modern UI** — Clean, dark-themed chat interface with auto-scrolling and responsive design
 - **Serverless** — Runs entirely in the browser, no backend required
 - **GitHub Pages ready** — Automated deployment via GitHub Actions
 
@@ -76,22 +81,6 @@ To add support for a new language:
 
 4. **Add a language button** in `elm/src/Main.elm` in the `viewSetup` function and handle the labels.
 
-## Deployment
-
-The project includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that:
-
-1. Compiles the Elm source on every push to `master`/`main`
-2. Publishes the contents of `public/` to a `public` branch
-3. You can then configure **GitHub Pages** to serve from the `public` branch
-
-### Setup GitHub Pages
-
-1. Go to your repository **Settings** → **Pages**
-2. Set **Source** to "Deploy from a branch"
-3. Select the `public` branch and `/ (root)` folder
-4. Save — your site will be live!
-
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-

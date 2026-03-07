@@ -1,7 +1,7 @@
 module Eliza.Languages.English exposing (greeting, goodbye, keywords, reflections, defaultResponses, shortInputResponses, quitWords)
 
-{-| English language data for the Eliza chatbot.
-    Based on the classic Weizenbaum ELIZA script.
+{-| English language data for the ELIZA-inspired chatbot.
+    Keywords, reflections, and responses for English conversations.
 -}
 
 import Eliza.Types exposing (Keyword, Rule)
