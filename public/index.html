@@ -375,34 +375,21 @@
             node: document.getElementById('elm-app')
         });
 
-        // Auto-scroll chat to bottom when new messages appear
-        function scrollToBottom() {
-            requestAnimationFrame(function() {
-                var chatContainer = document.getElementById('chat-container');
-                if (chatContainer) {
-                    chatContainer.scrollTop = chatContainer.scrollHeight;
-                }
+        // Subscribe to the scroll port from Elm
+        if (app.ports && app.ports.scrollChatToBottom) {
+            app.ports.scrollChatToBottom.subscribe(function() {
+                // Use requestAnimationFrame to ensure the DOM has been updated
+                requestAnimationFrame(function() {
+                    // Double rAF to ensure Elm's virtual DOM has patched
+                    requestAnimationFrame(function() {
+                        var chatContainer = document.getElementById('chat-container');
+                        if (chatContainer) {
+                            chatContainer.scrollTop = chatContainer.scrollHeight;
+                        }
+                    });
+                });
             });
         }
-
-        var observer = new MutationObserver(function(mutations) {
-            scrollToBottom();
-        });
-
-        // Start observing — retry until the elm-app is mounted
-        function startObserving() {
-            var target = document.getElementById('elm-app');
-            if (target) {
-                observer.observe(target, {
-                    childList: true,
-                    subtree: true,
-                    characterData: true
-                });
-            } else {
-                setTimeout(startObserving, 50);
-            }
-        }
-        startObserving();
     </script>
 </body>
 </html>

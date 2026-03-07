@@ -1,4 +1,4 @@
-module Main exposing (main)
+port module Main exposing (main)
 
 {-| Eliza Chatbot - A classic Weizenbaum ELIZA implementation in Elm.
     Supports multiple languages (English and German).
@@ -14,6 +14,11 @@ import Eliza.Engine as Engine
 import Eliza.Languages.English as English
 import Eliza.Languages.German as German
 import Eliza.Types exposing (Language(..), Message, Sender(..))
+
+
+-- PORTS
+
+port scrollChatToBottom : () -> Cmd msg
 
 
 -- MAIN
@@ -94,7 +99,7 @@ update msg model =
                     , messages = [ { text = greeting, sender = Eliza } ]
                     , elizaState = Engine.initState
                   }
-                , Cmd.none
+                , scrollChatToBottom ()
                 )
 
         SendMessage ->
@@ -116,7 +121,7 @@ update msg model =
                     , inputText = ""
                     , elizaState = newState
                   }
-                , Cmd.none
+                , scrollChatToBottom ()
                 )
 
         NoOp ->
