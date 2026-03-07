@@ -1,4 +1,4 @@
-module Eliza.Languages.English exposing (greeting, goodbye, keywords, reflections, defaultResponses, quitWords)
+module Eliza.Languages.English exposing (greeting, goodbye, keywords, reflections, defaultResponses, shortInputResponses, quitWords)
 
 {-| English language data for the Eliza chatbot.
     Based on the classic Weizenbaum ELIZA script.
@@ -58,6 +58,26 @@ defaultResponses =
     , "Does talking about this bother you?"
     , "Why do you think that is?"
     , "Let's explore that further."
+    , "What comes to mind when you think about that?"
+    , "How long have you felt this way?"
+    , "Is this something that concerns you often?"
+    , "What do you make of all this?"
+    , "And how does that relate to how you're feeling right now?"
+    ]
+
+
+{-| Responses for very short or meaningless input.
+-}
+shortInputResponses : List String
+shortInputResponses =
+    [ "Could you say a bit more? I'd like to understand."
+    , "I'm listening. Please tell me what's on your mind."
+    , "Can you express that in more detail?"
+    , "Go on, I'm here to listen."
+    , "Don't be shy. What are you thinking about?"
+    , "I need a little more to work with. What are you feeling?"
+    , "Take your time. What would you like to talk about?"
+    , "I'm not sure I understand. Could you elaborate?"
     ]
 
 

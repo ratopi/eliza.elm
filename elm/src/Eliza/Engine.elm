@@ -12,16 +12,24 @@ import Regex
 
 -- STATE
 
-{-| Tracks the conversation state, including response indices to avoid repetition.
+{-| Tracks the conversation state, including response indices to avoid repetition
+    and a simple counter for pseudo-random variation.
 -}
 type alias ElizaState =
     { responseIndices : List ( String, Int )
+    , turnCount : Int
+    , lastKeyword : String
+    , lastResponse : String
     }
 
 
 initState : ElizaState
 initState =
-    { responseIndices = [] }
+    { responseIndices = []
+    , turnCount = 0
+    , lastKeyword = ""
+    , lastResponse = ""
+    }
 
 
 -- PUBLIC API
@@ -51,7 +59,6 @@ getGreetingWithName lang name =
 
 
 {-| Generate a response to user input and return updated state.
-    The userName parameter allows Eliza to occasionally address the user by name.
 -}
 respond : Language -> String -> ElizaState -> String -> ( String, ElizaState )
 respond lang userName state input =
@@ -71,13 +78,32 @@ respond lang userName state input =
         defaultResponses =
             getDefaultResponses lang
 
+        shortInputResponses =
+            getShortInputResponses lang
+
         quitWords =
             getQuitWords lang
+
+        newTurn =
+            state.turnCount + 1
     in
     if List.any (\q -> cleanInput == q) quitWords then
         ( getGoodbyeWithName lang userName, state )
+
+    else if isVeryShortInput cleanInput then
+        -- Short/nonsensical input: ask user to say more
+        let
+            idx = getResponseIndex state "_short_"
+            resp = pickResponse shortInputResponses idx newTurn
+            newState =
+                state
+                    |> (\s -> updateResponseIndex s "_short_" (idx + 1))
+                    |> (\s -> { s | turnCount = newTurn, lastKeyword = "_short_", lastResponse = resp })
+        in
+        ( resp, newState )
+
     else
-        case findBestKeyword keywords cleanInput of
+        case findBestKeyword keywords cleanInput state.lastKeyword of
             Just ( keyword, matchedText ) ->
                 let
                     key =
@@ -94,29 +120,34 @@ respond lang userName state input =
                         List.length responses
 
                     selectedIndex =
-                        modBy (max 1 responseCount) currentIndex
+                        pickIndex responseCount currentIndex newTurn
 
                     response =
                         responses
                             |> List.drop selectedIndex
                             |> List.head
-                            |> Maybe.withDefault (getDefaultResponse defaultResponses state)
+                            |> Maybe.withDefault (pickResponse defaultResponses currentIndex newTurn)
 
                     reflected =
                         applyReflections reflections matchedText
 
                     finalResponse =
-                        String.replace "*" reflected response
+                        if String.contains "*" response then
+                            String.replace "*" (String.trim reflected) response
+                        else
+                            response
 
-                    -- Occasionally prepend the user's name
+                    -- Occasionally prepend the user's name (but not twice in a row)
                     namedResponse =
-                        if modBy 4 currentIndex == 0 && currentIndex > 0 then
+                        if modBy 5 newTurn == 0 && newTurn > 2 then
                             userName ++ ", " ++ decapitalize finalResponse
                         else
                             finalResponse
 
                     newState =
-                        updateResponseIndex state key (currentIndex + 1)
+                        state
+                            |> (\s -> updateResponseIndex s key (currentIndex + 1))
+                            |> (\s -> { s | turnCount = newTurn, lastKeyword = key, lastResponse = namedResponse })
                 in
                 ( namedResponse, newState )
 
@@ -126,17 +157,18 @@ respond lang userName state input =
                         getResponseIndex state "_default_"
 
                     resp =
-                        getDefaultResponseByIndex defaultResponses idx
+                        pickResponse defaultResponses idx newTurn
 
-                    -- Occasionally prepend the user's name
                     namedResp =
-                        if modBy 3 idx == 0 && idx > 0 then
+                        if modBy 4 newTurn == 0 && newTurn > 2 then
                             userName ++ ", " ++ decapitalize resp
                         else
                             resp
 
                     newState =
-                        updateResponseIndex state "_default_" (idx + 1)
+                        state
+                            |> (\s -> updateResponseIndex s "_default_" (idx + 1))
+                            |> (\s -> { s | turnCount = newTurn, lastKeyword = "_default_", lastResponse = namedResp })
                 in
                 ( namedResp, newState )
 
@@ -151,6 +183,46 @@ decapitalize str =
 
         Nothing ->
             str
+
+
+{-| Check if input is very short or meaningless (< 4 characters, no real words).
+-}
+isVeryShortInput : String -> Bool
+isVeryShortInput input =
+    let
+        trimmed = String.trim input
+        wordCount = List.length (String.words trimmed)
+    in
+    String.length trimmed < 4 && wordCount <= 1
+
+
+{-| Pick a response index using turn count for pseudo-random variation.
+    Avoids picking the same index twice in a row.
+-}
+pickIndex : Int -> Int -> Int -> Int
+pickIndex total currentIdx turn =
+    if total <= 1 then
+        0
+    else
+        let
+            -- Use a simple hash-like scramble based on turn count
+            scrambled = modBy total (currentIdx + (turn * 7 + 3))
+        in
+        scrambled
+
+
+{-| Pick a response from a list, using index and turn for variation.
+-}
+pickResponse : List String -> Int -> Int -> String
+pickResponse responses idx turn =
+    let
+        len = List.length responses
+        chosen = pickIndex len idx turn
+    in
+    responses
+        |> List.drop chosen
+        |> List.head
+        |> Maybe.withDefault "..."
 
 
 -- LANGUAGE DATA ACCESS
@@ -183,6 +255,16 @@ getDefaultResponses lang =
 
         German ->
             German.defaultResponses
+
+
+getShortInputResponses : Language -> List String
+getShortInputResponses lang =
+    case lang of
+        English ->
+            English.shortInputResponses
+
+        German ->
+            German.shortInputResponses
 
 
 getQuitWords : Language -> List String
@@ -218,25 +300,53 @@ getGoodbyeWithName lang name =
 -- PATTERN MATCHING
 
 {-| Find the best matching keyword for the given input.
-    Returns the keyword and the captured wildcard text.
+    Keywords must appear as whole words in the input (word boundary matching).
+    Avoids picking the same keyword as last time when possible.
 -}
-findBestKeyword : List Keyword -> String -> Maybe ( Keyword, String )
-findBestKeyword keywords input =
+findBestKeyword : List Keyword -> String -> String -> Maybe ( Keyword, String )
+findBestKeyword keywords input lastKeyword =
     let
+        inputWords =
+            String.words input
+
         matches =
             keywords
                 |> List.filterMap
                     (\kw ->
-                        case matchKeyword kw input of
-                            Just captured ->
-                                Just ( kw, captured )
+                        if containsKeywordAsWord kw.keyword inputWords input then
+                            case matchKeyword kw input of
+                                Just captured ->
+                                    Just ( kw, captured )
 
-                            Nothing ->
-                                Nothing
+                                Nothing ->
+                                    Nothing
+                        else
+                            Nothing
                     )
                 |> List.sortBy (\( kw, _ ) -> negate kw.weight)
+
+        -- If possible, avoid repeating the same keyword as last turn
+        nonRepeating =
+            List.filter (\( kw, _ ) -> kw.keyword /= lastKeyword) matches
     in
-    List.head matches
+    case nonRepeating of
+        first :: _ ->
+            Just first
+
+        [] ->
+            List.head matches
+
+
+{-| Check if a keyword (which may be multi-word) appears as whole word(s) in the input.
+-}
+containsKeywordAsWord : String -> List String -> String -> Bool
+containsKeywordAsWord keyword inputWords fullInput =
+    if String.contains " " keyword then
+        -- Multi-word keyword: check if phrase appears in full input
+        String.contains keyword fullInput
+    else
+        -- Single word: must appear as a standalone word
+        List.member keyword inputWords
 
 
 {-| Try to match a keyword against input. Returns captured text if matched.
@@ -299,11 +409,8 @@ matchRule rule input =
                 Nothing
 
         [ single ] ->
-            -- Exact keyword match somewhere in input
-            if String.contains (String.toLower single) input then
-                Just ""
-            else
-                Nothing
+            -- Exact keyword match somewhere in input (already verified by containsKeywordAsWord)
+            Just ""
 
         _ ->
             Nothing
@@ -359,26 +466,6 @@ updateResponseIndex state key newIndex =
             ( key, newIndex ) :: updated
     in
     { state | responseIndices = newIndices }
-
-
-getDefaultResponse : List String -> ElizaState -> String
-getDefaultResponse defaults state =
-    let
-        idx = getResponseIndex state "_default_"
-    in
-    getDefaultResponseByIndex defaults idx
-
-
-getDefaultResponseByIndex : List String -> Int -> String
-getDefaultResponseByIndex defaults idx =
-    let
-        len = List.length defaults
-        safeIdx = modBy (max 1 len) idx
-    in
-    defaults
-        |> List.drop safeIdx
-        |> List.head
-        |> Maybe.withDefault "Please go on."
 
 
 -- UTILITIES
