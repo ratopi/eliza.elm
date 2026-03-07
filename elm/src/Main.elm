@@ -73,6 +73,7 @@ type Msg
     | SendMessage
     | SwitchLanguage Language
     | StartChat
+    | EndSession
     | NoOp
 
 
@@ -125,6 +126,16 @@ update msg model =
                   }
                 , scrollChatToBottom ()
                 )
+
+        EndSession ->
+            ( { model
+                | screen = Setup
+                , messages = []
+                , inputText = ""
+                , elizaState = Engine.initState
+              }
+            , Cmd.none
+            )
 
         NoOp ->
             ( model, Cmd.none )
@@ -261,13 +272,17 @@ viewHeader currentLang userName =
             , p [ class "subtitle" ]
                 [ text (headerSubtitle currentLang userName) ]
             ]
+        , button
+            [ class "end-session-btn"
+            , onClick EndSession
+            ]
+            [ text (endSessionLabel currentLang) ]
         , a [ class "github-link"
             , href "https://github.com/ratopi/eliza.elm"
             , Html.Attributes.target "_blank"
             , Html.Attributes.rel "noopener noreferrer"
             ]
             [ githubIcon
-            , text "GitHub"
             ]
         ]
 
@@ -280,6 +295,16 @@ headerSubtitle lang name =
 
         German ->
             "Sitzung mit " ++ name
+
+
+endSessionLabel : Language -> String
+endSessionLabel lang =
+    case lang of
+        English ->
+            "End Session"
+
+        German ->
+            "Sitzung beenden"
 
 
 viewChat : List Message -> Html Msg
