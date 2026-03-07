@@ -12,9 +12,6 @@ import Regex
 
 -- STATE
 
-{-| Tracks the conversation state, including response indices to avoid repetition
-    and a simple counter for pseudo-random variation.
--}
 type alias ElizaState =
     { responseIndices : List ( String, Int )
     , turnCount : Int
@@ -88,7 +85,6 @@ respond lang userName state input =
         ( getGoodbyeWithName lang userName, state )
 
     else
-        -- Always try keyword matching first, even for short input
         case findBestKeyword keywords cleanInput state.lastKeyword of
             Just ( keyword, matchedText ) ->
                 let
@@ -112,7 +108,7 @@ respond lang userName state input =
                         responses
                             |> List.drop selectedIndex
                             |> List.head
-                            |> Maybe.withDefault (pickResponse defaultResponses currentIndex newTurn)
+                            |> Maybe.withDefault (pickResponse defaultResponses currentIndex newTurn state.lastResponse)
 
                     reflected =
                         applyReflections reflections matchedText
@@ -123,7 +119,6 @@ respond lang userName state input =
                                 trimReflected = String.trim reflected
                             in
                             if trimReflected == "" then
-                                -- Remove the wildcard placeholder if nothing was captured
                                 String.replace " *" "" response
                                     |> String.replace "* " ""
                                     |> String.replace "*" ""
@@ -132,12 +127,22 @@ respond lang userName state input =
                         else
                             response
 
-                    -- Occasionally prepend the user's name (not too often, not first turns)
-                    namedResponse =
-                        if newTurn > 3 && modBy 5 newTurn == 0 && state.lastKeyword /= "_named_" then
-                            userName ++ ", " ++ decapitalize finalResponse
+                    -- If we'd produce the exact same response as last time, advance to next
+                    safeResponse =
+                        if finalResponse == state.lastResponse then
+                            responses
+                                |> List.drop (modBy (max 1 responseCount) (selectedIndex + 1))
+                                |> List.head
+                                |> Maybe.withDefault finalResponse
                         else
                             finalResponse
+
+                    -- Occasionally prepend user name
+                    namedResponse =
+                        if newTurn > 3 && modBy 6 newTurn == 0 then
+                            userName ++ ", " ++ decapitalize safeResponse
+                        else
+                            safeResponse
 
                     newState =
                         state
@@ -149,11 +154,10 @@ respond lang userName state input =
                 ( namedResponse, newState )
 
             Nothing ->
-                -- No keyword matched: check if input is very short/meaningless
                 if isVeryShortInput cleanInput then
                     let
                         idx = getResponseIndex state "_short_"
-                        resp = pickResponse shortInputResponses idx newTurn
+                        resp = pickResponse shortInputResponses idx newTurn state.lastResponse
                         newState =
                             state
                                 |> (\s -> updateResponseIndex s "_short_" (idx + 1))
@@ -167,10 +171,10 @@ respond lang userName state input =
                             getResponseIndex state "_default_"
 
                         resp =
-                            pickResponse defaultResponses idx newTurn
+                            pickResponse defaultResponses idx newTurn state.lastResponse
 
                         namedResp =
-                            if newTurn > 4 && modBy 4 newTurn == 0 then
+                            if newTurn > 4 && modBy 5 newTurn == 0 then
                                 userName ++ ", " ++ decapitalize resp
                             else
                                 resp
@@ -193,40 +197,41 @@ decapitalize str =
             str
 
 
-{-| Check if input is very short AND has no recognizable keyword meaning.
-    Only truly meaningless gibberish (< 3 characters, single token).
--}
 isVeryShortInput : String -> Bool
 isVeryShortInput input =
-    let
-        trimmed = String.trim input
-    in
-    String.length trimmed < 3
+    String.length (String.trim input) < 3
 
 
-{-| Pick a response index using turn count for pseudo-random variation.
+{-| Pick a response index with pseudo-random variation.
 -}
 pickIndex : Int -> Int -> Int -> Int
 pickIndex total currentIdx turn =
     if total <= 1 then
         0
     else
-        let
-            scrambled = modBy total (currentIdx + (turn * 7 + 3))
-        in
-        scrambled
+        modBy total (currentIdx + (turn * 7 + 3))
 
 
-pickResponse : List String -> Int -> Int -> String
-pickResponse responses idx turn =
+{-| Pick a response, avoiding the last response if possible.
+-}
+pickResponse : List String -> Int -> Int -> String -> String
+pickResponse responses idx turn lastResp =
     let
         len = List.length responses
         chosen = pickIndex len idx turn
+        resp =
+            responses
+                |> List.drop chosen
+                |> List.head
+                |> Maybe.withDefault "..."
     in
-    responses
-        |> List.drop chosen
-        |> List.head
-        |> Maybe.withDefault "..."
+    if resp == lastResp && len > 1 then
+        responses
+            |> List.drop (modBy len (chosen + 1))
+            |> List.head
+            |> Maybe.withDefault resp
+    else
+        resp
 
 
 -- LANGUAGE DATA ACCESS
@@ -304,9 +309,9 @@ getGoodbyeWithName lang name =
 -- PATTERN MATCHING
 
 {-| Find the best matching keyword for the given input.
-    Keywords must appear as whole words in the input (word boundary matching).
-    Among keywords with same weight, prefer longer (more specific) keywords.
-    Avoids picking the same keyword as last time when possible.
+    Keywords must appear as whole words (word boundary matching).
+    Among same weight, prefer longer (more specific) keywords.
+    Avoids repeating the same keyword as last turn when possible.
 -}
 findBestKeyword : List Keyword -> String -> String -> Maybe ( Keyword, String )
 findBestKeyword keywords input lastKeyword =
@@ -314,11 +319,14 @@ findBestKeyword keywords input lastKeyword =
         inputWords =
             String.words input
 
+        wordCount =
+            List.length inputWords
+
         matches =
             keywords
                 |> List.filterMap
                     (\kw ->
-                        if containsKeywordAsWord kw.keyword inputWords input then
+                        if keywordMatchesInput kw.keyword inputWords input wordCount then
                             case matchKeyword kw input of
                                 Just captured ->
                                     Just ( kw, captured )
@@ -328,7 +336,6 @@ findBestKeyword keywords input lastKeyword =
                         else
                             Nothing
                     )
-                -- Sort by: weight descending, then keyword length descending (more specific first)
                 |> List.sortWith
                     (\( kw1, _ ) ( kw2, _ ) ->
                         case compare kw2.weight kw1.weight of
@@ -339,7 +346,6 @@ findBestKeyword keywords input lastKeyword =
                                 other
                     )
 
-        -- If possible, avoid repeating the same keyword as last turn
         nonRepeating =
             List.filter (\( kw, _ ) -> kw.keyword /= lastKeyword) matches
     in
@@ -351,16 +357,91 @@ findBestKeyword keywords input lastKeyword =
             List.head matches
 
 
-{-| Check if a keyword (which may be multi-word) appears as whole word(s) in the input.
+{-| Check if a keyword matches the input.
+    - Multi-word keywords: phrase must appear in the full input.
+    - Short single-word keywords (≤ 3 chars like "ja", "wie", "was"):
+      only match if they appear at the START of the input (first word)
+      to prevent matching filler words mid-sentence.
+    - Longer single-word keywords: must appear as a standalone word.
+    - Also does fuzzy matching for single words (1 edit distance)
+      to handle common typos like "therapeuth" → "therapeut".
 -}
-containsKeywordAsWord : String -> List String -> String -> Bool
-containsKeywordAsWord keyword inputWords fullInput =
+keywordMatchesInput : String -> List String -> String -> Int -> Bool
+keywordMatchesInput keyword inputWords fullInput wordCount =
     if String.contains " " keyword then
-        -- Multi-word keyword: check if phrase appears in full input
+        -- Multi-word keyword: check phrase in full input
         String.contains keyword fullInput
+    else if String.length keyword <= 3 then
+        -- Short keywords (ja, wie, was, nie, etc.):
+        -- Only match if it's the first word, or the input is very short (≤ 2 words)
+        case List.head inputWords of
+            Just firstWord ->
+                if firstWord == keyword then
+                    True
+                else if wordCount <= 2 then
+                    List.member keyword inputWords
+                else
+                    False
+
+            Nothing ->
+                False
     else
-        -- Single word: must appear as a standalone word
+        -- Longer single word: exact match or fuzzy match (1 typo)
         List.member keyword inputWords
+            || List.any (\w -> isFuzzyMatch keyword w) inputWords
+
+
+{-| Check if two words are within 1 edit distance (simple fuzzy match).
+    Only for words of similar length (±1). Handles insertions/deletions/substitutions.
+-}
+isFuzzyMatch : String -> String -> Bool
+isFuzzyMatch a b =
+    let
+        lenA = String.length a
+        lenB = String.length b
+        diff = abs (lenA - lenB)
+    in
+    if diff > 1 then
+        False
+    else if lenA < 4 || lenB < 4 then
+        -- Don't fuzzy match very short words
+        False
+    else
+        editDistance (String.toList a) (String.toList b) 0 <= 1
+
+
+{-| Simple edit distance computation, bailing out early if > 1.
+-}
+editDistance : List Char -> List Char -> Int -> Int
+editDistance xs ys errors =
+    if errors > 1 then
+        2
+    else
+        case ( xs, ys ) of
+            ( [], [] ) ->
+                errors
+
+            ( [], _ ) ->
+                errors + List.length ys
+
+            ( _, [] ) ->
+                errors + List.length xs
+
+            ( x :: xr, y :: yr ) ->
+                if x == y then
+                    editDistance xr yr errors
+                else
+                    -- Try substitution (cheapest single operation)
+                    let
+                        sub = editDistance xr yr (errors + 1)
+                    in
+                    if sub <= 1 then
+                        sub
+                    else
+                        -- Try insertion/deletion
+                        min
+                            (editDistance xs yr (errors + 1))
+                            (editDistance xr ys (errors + 1))
 
 
 matchKeyword : Keyword -> String -> Maybe String
@@ -386,7 +467,6 @@ matchRule rule input =
             if String.startsWith prefix input then
                 Just (String.dropLeft (String.length prefix) input |> String.trim)
             else
-                -- Also try to find the prefix anywhere in the input (for multi-clause input)
                 case findSubstringAfter prefix input of
                     Just rest ->
                         Just (String.trim rest)
@@ -420,22 +500,16 @@ matchRule rule input =
             else
                 Nothing
 
-        [ single ] ->
+        [ _ ] ->
             Just ""
 
         _ ->
             Nothing
 
 
-{-| Find a substring in the input and return everything after it.
-    Useful for matching patterns in multi-clause input like "ich weiß nicht ich fühle mich schlecht"
--}
 findSubstringAfter : String -> String -> Maybe String
 findSubstringAfter needle haystack =
-    let
-        idx = indexOf needle haystack
-    in
-    case idx of
+    case indexOf needle haystack of
         Just i ->
             Just (String.dropLeft (i + String.length needle) haystack)
 
@@ -443,8 +517,6 @@ findSubstringAfter needle haystack =
             Nothing
 
 
-{-| Simple indexOf implementation.
--}
 indexOf : String -> String -> Maybe Int
 indexOf needle haystack =
     indexOfHelper needle haystack 0
@@ -526,8 +598,6 @@ removePunctuation text =
             text
 
 
-{-| Collapse multiple spaces into one.
--}
 collapseSpaces : String -> String
 collapseSpaces text =
     let
@@ -541,4 +611,3 @@ collapseSpaces text =
 
         Nothing ->
             text
-

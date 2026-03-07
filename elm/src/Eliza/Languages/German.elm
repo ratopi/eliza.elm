@@ -320,15 +320,190 @@ keywords =
               }
             ]
       }
-    , { keyword = "doch"
-      , weight = 3
+    -- === User asking Eliza directly ===
+    , { keyword = "das frage ich"
+      , weight = 7
       , decompositions =
             [ { pattern = [ "*" ]
               , responses =
-                    [ "Sie widersprechen. Was genau sehen Sie anders?"
-                    , "Erzählen Sie mir mehr darüber, warum Sie anderer Meinung sind."
-                    , "Was ist Ihre Sichtweise?"
-                    , "Ich höre, dass Sie nicht einverstanden sind. Helfen Sie mir, Sie zu verstehen."
+                    [ "Ich verstehe, dass Sie Antworten suchen. Aber versuchen Sie zunächst, selbst in sich hineinzuhören. Was fühlen Sie?"
+                    , "Es ist wichtig, dass Sie Ihre eigenen Gedanken dazu erforschen. Was kommt Ihnen als Erstes in den Sinn?"
+                    , "Ich kann Ihnen helfen, die Antwort selbst zu finden. Was beschäftigt Sie am meisten?"
+                    , "Statt dass ich Ihnen die Antwort gebe — was vermuten Sie?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "frage ich sie"
+      , weight = 7
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Ich verstehe, dass Sie sich Antworten von mir erhoffen. Lassen Sie uns gemeinsam herausfinden, was Sie bewegt."
+                    , "Die wichtigsten Antworten kommen oft von innen. Was fühlen Sie gerade?"
+                    , "Ich bin hier, um Ihnen beim Nachdenken zu helfen. Was beschäftigt Sie am meisten?"
+                    ]
+              }
+            ]
+      }
+
+    -- === Problems / Help ===
+    , { keyword = "problem"
+      , weight = 5
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Können Sie mir mehr über dieses Problem erzählen?"
+                    , "Wie lange beschäftigt Sie dieses Problem schon?"
+                    , "Was haben Sie bisher versucht, um das Problem zu lösen?"
+                    , "Wie wirkt sich das Problem auf Ihren Alltag aus?"
+                    , "Was wäre anders, wenn dieses Problem gelöst wäre?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "hilfe"
+      , weight = 5
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Sie suchen Hilfe. Wobei genau kann ich Ihnen helfen?"
+                    , "Was für eine Art von Hilfe benötigen Sie?"
+                    , "Erzählen Sie mir mehr darüber, wobei Sie Hilfe brauchen."
+                    , "Es ist mutig, um Hilfe zu bitten. Was belastet Sie?"
+                    ]
+              }
+            ]
+      }
+
+    -- === Frustration / Stuck ===
+    , { keyword = "ich komme nicht"
+      , weight = 5
+      , decompositions =
+            [ { pattern = [ "ich komme nicht ", "*" ]
+              , responses =
+                    [ "Was genau blockiert Sie?"
+                    , "Seit wann haben Sie das Gefühl, nicht * zu kommen?"
+                    , "Was haben Sie schon alles versucht?"
+                    , "Wie fühlt es sich an, nicht * zu kommen?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "alles probiert"
+      , weight = 6
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Das klingt frustrierend. Können Sie mir erzählen, was Sie alles versucht haben?"
+                    , "Es klingt, als wären Sie erschöpft von den Versuchen. Wie fühlen Sie sich dabei?"
+                    , "Manchmal braucht man einen neuen Blickwinkel. Was war bisher am hilfreichsten?"
+                    , "Was wäre, wenn es noch eine Möglichkeit gäbe, die Sie noch nicht in Betracht gezogen haben?"
+                    ]
+              }
+            ]
+      }
+
+    -- === Having / Past experience ===
+    , { keyword = "ich habe"
+      , weight = 3
+      , decompositions =
+            [ { pattern = [ "ich habe ", "*" ]
+              , responses =
+                    [ "Sie sagen, Sie haben *. Erzählen Sie mir mehr darüber."
+                    , "Wie hat es sich angefühlt, * zu haben?"
+                    , "Inwiefern ist * wichtig für Sie?"
+                    , "Was bedeutet das für Sie, dass Sie *?"
+                    ]
+              }
+            ]
+      }
+
+    -- === Negation ===
+    , { keyword = "keine"
+      , weight = 3
+      , decompositions =
+            [ { pattern = [ "*", " keine ", "*" ]
+              , responses =
+                    [ "Gar keine? Warum glauben Sie, dass das so ist?"
+                    , "Wie fühlen Sie sich damit, keine * zu haben?"
+                    , "Was müsste passieren, damit sich das ändert?"
+                    ]
+              }
+            , { pattern = [ "*" ]
+              , responses =
+                    [ "Sie verneinen etwas. Was genau meinen Sie?"
+                    , "Können Sie mir mehr darüber erzählen?"
+                    , "Wie fühlt sich das für Sie an?"
+                    ]
+              }
+            ]
+      }
+
+    -- === Reference to what Eliza said ===
+    , { keyword = "sie haben gesagt"
+      , weight = 7
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Lassen Sie uns weniger darüber reden, was ich gesagt habe, und mehr darüber, was Sie fühlen."
+                    , "Was an dem, was ich gesagt habe, hat Sie beschäftigt?"
+                    , "Ich möchte mich auf Ihre Gefühle konzentrieren. Was bewegt Sie gerade?"
+                    , "Es geht hier um Sie. Was fühlen Sie in diesem Moment?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "haben gesagt"
+      , weight = 6
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Reden wir lieber über Sie. Was beschäftigt Sie gerade?"
+                    , "Meine Worte scheinen Sie beschäftigt zu haben. Was genau?"
+                    , "Lassen Sie uns zum Wesentlichen zurückkehren — wie geht es Ihnen?"
+                    ]
+              }
+            ]
+      }
+
+    -- === Expectation / Solution ===
+    , { keyword = "lösung"
+      , weight = 5
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Sie suchen eine Lösung. Welche Lösungsansätze haben Sie selbst schon in Betracht gezogen?"
+                    , "Manchmal liegt die Lösung näher, als man denkt. Was ist Ihr Bauchgefühl?"
+                    , "Was wäre für Sie eine zufriedenstellende Lösung?"
+                    , "Bevor wir über Lösungen sprechen — können Sie mir das Problem genauer beschreiben?"
+                    ]
+              }
+            ]
+      }
+
+    -- === What with / continuation ===
+    , { keyword = "mit was"
+      , weight = 6
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Was liegt Ihnen gerade am meisten auf dem Herzen?"
+                    , "Erzählen Sie mir einfach, was Ihnen als Erstes einfällt."
+                    , "Sprechen Sie über das, was Sie am meisten beschäftigt."
+                    , "Beginnen Sie dort, wo es sich am wichtigsten anfühlt."
+                    ]
+              }
+            ]
+      }
+    , { keyword = "womit"
+      , weight = 6
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Was liegt Ihnen am meisten auf dem Herzen?"
+                    , "Sprechen Sie einfach über das, was Sie bewegt."
+                    , "Beginnen Sie dort, wo es sich richtig anfühlt."
                     ]
               }
             ]
@@ -883,7 +1058,7 @@ keywords =
                     [ "Warum fragen Sie?"
                     , "Was möchten Sie wirklich wissen?"
                     , "Was denken Sie selbst?"
-                    , "Was erhofffen Sie sich von meiner Antwort?"
+                    , "Was erhoffen Sie sich von meiner Antwort?"
                     ]
               }
             ]
