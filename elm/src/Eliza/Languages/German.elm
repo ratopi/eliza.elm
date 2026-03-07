@@ -19,7 +19,7 @@ goodbye =
 
 quitWords : List String
 quitWords =
-    [ "tschüss", "auf wiedersehen", "ende", "quit", "bye" ]
+    [ "tschüss", "tschüs", "auf wiedersehen", "ende", "quit", "bye", "ciao" ]
 
 
 reflections : List ( String, String )
@@ -152,6 +152,30 @@ keywords =
               }
             ]
       }
+    , { keyword = "unsinn"
+      , weight = 9
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Es tut mir leid, wenn ich Sie verwirrt habe. Lassen Sie uns zum Kern kommen. Was belastet Sie am meisten?"
+                    , "Ich merke, dass Sie frustriert sind. Lassen Sie uns einen Neuanfang machen. Was fühlen Sie gerade?"
+                    , "Sie haben Recht, ich bin nicht perfekt. Aber ich höre Ihnen zu. Was ist Ihnen am wichtigsten?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "nicht hilfreich"
+      , weight = 9
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Das tut mir leid. Wie könnte ich Ihnen besser helfen? Was wünschen Sie sich von diesem Gespräch?"
+                    , "Ich verstehe Ihre Frustration. Lassen Sie uns einen anderen Weg versuchen. Was ist gerade Ihr dringendstes Anliegen?"
+                    , "Sie haben Recht, ich könnte es besser machen. Erzählen Sie mir ganz konkret: Was beschäftigt Sie heute?"
+                    ]
+              }
+            ]
+      }
 
     -- === Strong emotions ===
     , { keyword = "ich hasse"
@@ -175,6 +199,187 @@ keywords =
                     [ "Hass ist ein sehr starkes Gefühl. Gegen wen oder was richtet er sich?"
                     , "Erzählen Sie mir mehr über diesen Hass. Woher kommt er?"
                     , "Was hat diesen Hass ausgelöst?"
+                    ]
+              }
+            ]
+      }
+
+    -- === User repeating themselves ===
+    , { keyword = "schon erzählt"
+      , weight = 8
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Ich höre, dass Sie das Gefühl haben, sich zu wiederholen. Lassen Sie mich anders fragen: Was genau belastet Sie im Moment am meisten?"
+                    , "Entschuldigung. Sie haben Recht. Lassen Sie uns einen anderen Aspekt beleuchten. Was fühlen Sie gerade?"
+                    , "Ich verstehe. Lassen Sie uns konkreter werden: Was war heute der schwierigste Moment für Sie?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "schon gesagt"
+      , weight = 8
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Sie haben Recht, Sie haben es schon erwähnt. Lassen Sie mich eine andere Frage stellen: Was würden Sie sich am meisten wünschen?"
+                    , "Entschuldigung, dass ich mich wiederhole. Erzählen Sie mir stattdessen: Wie sieht ein typischer Tag bei Ihnen aus?"
+                    , "Ich höre Sie. Lassen Sie uns über etwas anderes sprechen. Was macht Ihnen im Moment am meisten zu schaffen?"
+                    ]
+              }
+            ]
+      }
+
+    -- === User asking for concrete help ===
+    , { keyword = "können sie mir helfen"
+      , weight = 8
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Ich bin hier, um Ihnen zu helfen. Dafür müsste ich besser verstehen, was Sie belastet. Können Sie mir ein konkretes Beispiel nennen?"
+                    , "Ich möchte Ihnen helfen. Manchmal hilft es am meisten, wenn Sie Ihre Gedanken aussprechen. Was geht Ihnen gerade durch den Kopf?"
+                    , "Ja, ich möchte Ihnen helfen. Der erste Schritt ist, dass Sie mir so genau wie möglich beschreiben, wie es Ihnen geht."
+                    ]
+              }
+            ]
+      }
+    , { keyword = "mir helfen"
+      , weight = 7
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Ich möchte Ihnen gerne helfen. Dafür ist es wichtig, dass ich verstehe, was genau Sie belastet. Können Sie das beschreiben?"
+                    , "Hilfe beginnt oft damit, die eigenen Gefühle in Worte zu fassen. Was empfinden Sie gerade?"
+                    , "Ich bin hier, um zuzuhören. Erzählen Sie mir so genau wie möglich, wie sich das anfühlt."
+                    ]
+              }
+            ]
+      }
+    , { keyword = "tipps"
+      , weight = 6
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Bevor wir über Lösungen sprechen — ich möchte zuerst verstehen, was genau Sie belastet. Können Sie das beschreiben?"
+                    , "Ich kann am besten helfen, wenn ich Ihre Situation genau verstehe. Erzählen Sie mir mehr darüber, wie sich das anfühlt."
+                    , "Anstatt Tipps zu geben, möchte ich Ihnen helfen, selbst Klarheit zu finden. Was glauben Sie, würde Ihnen am meisten helfen?"
+                    ]
+              }
+            ]
+      }
+
+    -- === Nothing helped ===
+    , { keyword = "nichts hat geholfen"
+      , weight = 7
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Das klingt sehr frustrierend, wenn nichts zu helfen scheint. Was haben Sie alles versucht?"
+                    , "Ich verstehe, dass Sie erschöpft sind. Manchmal braucht es Zeit und den richtigen Ansatz. Was hat am ehesten geholfen, auch wenn nur ein wenig?"
+                    , "Es muss sich sehr hoffnungslos anfühlen, wenn nichts hilft. Wie gehen Sie damit um?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "geholfen"
+      , weight = 5
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Was haben Sie bisher versucht?"
+                    , "Wenn Sie zurückblicken — was hat ein kleines bisschen geholfen?"
+                    , "Was erhoffen Sie sich, das Ihnen helfen könnte?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "nichts hilft"
+      , weight = 7
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Das klingt sehr belastend. Können Sie mir erzählen, was Sie alles versucht haben?"
+                    , "Wenn man das Gefühl hat, dass nichts hilft, kann das sehr entmutigend sein. Was hat früher vielleicht ein bisschen geholfen?"
+                    , "Ich höre, wie frustriert Sie sind. Lassen Sie uns gemeinsam schauen, ob wir einen neuen Ansatz finden."
+                    ]
+              }
+            ]
+      }
+
+    -- === Time expressions ===
+    , { keyword = "ewig"
+      , weight = 4
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Das ist eine sehr lange Zeit. Erinnern Sie sich, wann es angefangen hat?"
+                    , "Wie haben Sie es geschafft, so lange damit umzugehen?"
+                    , "Hat es sich über die Zeit verändert, oder ist es gleich geblieben?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "vor jahren"
+      , weight = 5
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Was ist vor Jahren passiert? Erinnern Sie sich an den Auslöser?"
+                    , "Können Sie mir erzählen, was damals los war, als es angefangen hat?"
+                    , "Hat sich Ihre Situation seitdem verändert?"
+                    ]
+              }
+            ]
+      }
+
+    -- === Depression symptoms ===
+    , { keyword = "antriebslos"
+      , weight = 6
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Antriebslosigkeit kann sehr belastend sein. Seit wann fühlen Sie sich so?"
+                    , "Wie äußert sich die Antriebslosigkeit in Ihrem Alltag?"
+                    , "Gab es eine Zeit, in der Sie mehr Antrieb hatten? Was war damals anders?"
+                    , "Gibt es trotzdem Dinge, die Sie noch schaffen? Auch kleine?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "nichts geregelt"
+      , weight = 6
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Das klingt sehr belastend. Was fällt Ihnen am schwersten?"
+                    , "Wie fühlen Sie sich, wenn Sie nichts geschafft haben?"
+                    , "Haben Sie jemanden, der Sie unterstützen könnte?"
+                    ]
+              }
+            ]
+      }
+    , { keyword = "schiebe alles auf"
+      , weight = 6
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Aufschieben kann ein Zeichen dafür sein, dass Sie sich überfordert fühlen. Stimmt das?"
+                    , "Was genau schieben Sie auf? Und was hält Sie davon ab, es zu tun?"
+                    , "Wie fühlen Sie sich, wenn Sie Dinge aufschieben?"
+                    ]
+              }
+            ]
+      }
+
+    -- === Helplessness / hopelessness ===
+    , { keyword = "hoffnungslos"
+      , weight = 7
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Hoffnungslosigkeit ist ein sehr schweres Gefühl. Wie lange fühlen Sie sich schon so?"
+                    , "Was würde Ihnen Hoffnung geben? Auch etwas ganz Kleines?"
+                    , "Gab es eine Zeit, in der Sie hoffnungsvoller waren? Was war damals anders?"
                     ]
               }
             ]
@@ -673,6 +878,18 @@ keywords =
                     [ "Was liegt Ihnen gerade am meisten auf dem Herzen?"
                     , "Erzählen Sie mir einfach, was Ihnen als Erstes einfällt."
                     , "Sprechen Sie über das, was Sie am meisten beschäftigt."
+                    ]
+              }
+            ]
+      }
+    , { keyword = "bei was"
+      , weight = 6
+      , decompositions =
+            [ { pattern = [ "*" ]
+              , responses =
+                    [ "Was belastet Sie im Moment am meisten?"
+                    , "Erzählen Sie mir, was Sie am meisten beschäftigt."
+                    , "Lassen Sie uns dort anfangen, wo es am dringendsten ist."
                     ]
               }
             ]

@@ -81,7 +81,7 @@ respond lang userName state input =
         newTurn =
             state.turnCount + 1
     in
-    if List.any (\q -> cleanInput == q) quitWords then
+    if isQuit cleanInput quitWords then
         ( getGoodbyeWithName lang userName, state )
 
     else
@@ -101,20 +101,24 @@ respond lang userName state input =
                     reflected =
                         applyReflections reflections matchedText
 
+                    -- Limit captured text to first clause (max 5 words) to avoid
+                    -- nonsensical reflections when user writes multiple sentences
+                    limitedReflected =
+                        reflected
+                            |> String.trim
+                            |> limitToClause 5
+
                     rawResponse =
                         pickNonRecentResponse responses currentIndex newTurn state.recentResponses
 
                     finalResponse =
                         if String.contains "*" rawResponse then
-                            let
-                                trimReflected = String.trim reflected
-                            in
-                            if trimReflected == "" then
+                            if limitedReflected == "" then
                                 String.replace " *" "" rawResponse
                                     |> String.replace "* " ""
                                     |> String.replace "*" ""
                             else
-                                String.replace "*" trimReflected rawResponse
+                                String.replace "*" limitedReflected rawResponse
                         else
                             rawResponse
 
@@ -195,6 +199,70 @@ decapitalize str =
 isVeryShortInput : String -> Bool
 isVeryShortInput input =
     String.length (String.trim input) < 3
+
+
+{-| Check if input is a quit command.
+    Matches if the entire input is a quit word, or if the last word is a quit word.
+-}
+isQuit : String -> List String -> Bool
+isQuit input quitWords =
+    List.any (\q -> input == q) quitWords
+        || (case lastWord input of
+                Just w ->
+                    List.any (\q -> w == q) quitWords
+
+                Nothing ->
+                    False
+           )
+
+
+lastWord : String -> Maybe String
+lastWord text =
+    text
+        |> String.words
+        |> List.reverse
+        |> List.head
+
+
+{-| Limit captured text to the first meaningful clause.
+    Cuts at sentence boundary markers (conjunctions, subject changes)
+    and also limits to max N words. This prevents nonsensical reflections
+    when the user writes multiple sentences.
+-}
+limitToClause : Int -> String -> String
+limitToClause maxWords text =
+    let
+        words = String.words text
+
+        -- Stop words that typically indicate a new clause/sentence
+        stopMarkers =
+            [ "und", "aber", "oder", "doch", "weil", "dass", "denn", "also"
+            , "ich", "sie", "er", "wir", "habe", "haben", "hat", "kann"
+            , "then", "because", "and", "but"
+            ]
+
+        -- Take words until we hit a stop marker (after the first word)
+        -- or until maxWords is reached
+        takeUntilStop ws count =
+            case ws of
+                [] ->
+                    []
+
+                w :: rest ->
+                    if count >= maxWords then
+                        []
+                    else if count > 0 && List.member (String.toLower w) stopMarkers then
+                        []
+                    else
+                        w :: takeUntilStop rest (count + 1)
+
+        result = takeUntilStop words 0
+    in
+    if List.isEmpty result then
+        -- If first word is already a stop marker, just take first word
+        words |> List.head |> Maybe.withDefault ""
+    else
+        String.join " " result
 
 
 {-| Pick a response index with pseudo-random variation.
