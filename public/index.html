@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>ELIZA - Virtual Therapist</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -27,6 +27,15 @@
                         }
                     });
                 });
+            });
+        }
+        // iOS keyboard fix: ensure input stays visible when virtual keyboard opens
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', function() {
+                document.documentElement.style.height = window.visualViewport.height + 'px';
+            });
+            window.visualViewport.addEventListener('scroll', function() {
+                document.documentElement.style.height = window.visualViewport.height + 'px';
             });
         }
     </script>
