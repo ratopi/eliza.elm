@@ -34,8 +34,6 @@ initState =
 
 -- PUBLIC API
 
-{-| Get the initial greeting for the given language.
--}
 getGreeting : Language -> String
 getGreeting lang =
     case lang of
@@ -46,8 +44,6 @@ getGreeting lang =
             German.greeting
 
 
-{-| Get a personalized greeting with the user's name.
--}
 getGreetingWithName : Language -> String -> String
 getGreetingWithName lang name =
     case lang of
@@ -68,6 +64,7 @@ respond lang userName state input =
                 |> String.toLower
                 |> String.trim
                 |> removePunctuation
+                |> collapseSpaces
 
         keywords =
             getKeywords lang
@@ -90,19 +87,8 @@ respond lang userName state input =
     if List.any (\q -> cleanInput == q) quitWords then
         ( getGoodbyeWithName lang userName, state )
 
-    else if isVeryShortInput cleanInput then
-        -- Short/nonsensical input: ask user to say more
-        let
-            idx = getResponseIndex state "_short_"
-            resp = pickResponse shortInputResponses idx newTurn
-            newState =
-                state
-                    |> (\s -> updateResponseIndex s "_short_" (idx + 1))
-                    |> (\s -> { s | turnCount = newTurn, lastKeyword = "_short_", lastResponse = resp })
-        in
-        ( resp, newState )
-
     else
+        -- Always try keyword matching first, even for short input
         case findBestKeyword keywords cleanInput state.lastKeyword of
             Just ( keyword, matchedText ) ->
                 let
@@ -133,13 +119,22 @@ respond lang userName state input =
 
                     finalResponse =
                         if String.contains "*" response then
-                            String.replace "*" (String.trim reflected) response
+                            let
+                                trimReflected = String.trim reflected
+                            in
+                            if trimReflected == "" then
+                                -- Remove the wildcard placeholder if nothing was captured
+                                String.replace " *" "" response
+                                    |> String.replace "* " ""
+                                    |> String.replace "*" ""
+                            else
+                                String.replace "*" trimReflected response
                         else
                             response
 
-                    -- Occasionally prepend the user's name (but not twice in a row)
+                    -- Occasionally prepend the user's name (not too often, not first turns)
                     namedResponse =
-                        if modBy 5 newTurn == 0 && newTurn > 2 then
+                        if newTurn > 3 && modBy 5 newTurn == 0 && state.lastKeyword /= "_named_" then
                             userName ++ ", " ++ decapitalize finalResponse
                         else
                             finalResponse
@@ -147,34 +142,47 @@ respond lang userName state input =
                     newState =
                         state
                             |> (\s -> updateResponseIndex s key (currentIndex + 1))
-                            |> (\s -> { s | turnCount = newTurn, lastKeyword = key, lastResponse = namedResponse })
+                            |> (\s -> { s | turnCount = newTurn
+                                          , lastKeyword = key
+                                          , lastResponse = namedResponse })
                 in
                 ( namedResponse, newState )
 
             Nothing ->
-                let
-                    idx =
-                        getResponseIndex state "_default_"
+                -- No keyword matched: check if input is very short/meaningless
+                if isVeryShortInput cleanInput then
+                    let
+                        idx = getResponseIndex state "_short_"
+                        resp = pickResponse shortInputResponses idx newTurn
+                        newState =
+                            state
+                                |> (\s -> updateResponseIndex s "_short_" (idx + 1))
+                                |> (\s -> { s | turnCount = newTurn, lastKeyword = "_short_", lastResponse = resp })
+                    in
+                    ( resp, newState )
 
-                    resp =
-                        pickResponse defaultResponses idx newTurn
+                else
+                    let
+                        idx =
+                            getResponseIndex state "_default_"
 
-                    namedResp =
-                        if modBy 4 newTurn == 0 && newTurn > 2 then
-                            userName ++ ", " ++ decapitalize resp
-                        else
-                            resp
+                        resp =
+                            pickResponse defaultResponses idx newTurn
 
-                    newState =
-                        state
-                            |> (\s -> updateResponseIndex s "_default_" (idx + 1))
-                            |> (\s -> { s | turnCount = newTurn, lastKeyword = "_default_", lastResponse = namedResp })
-                in
-                ( namedResp, newState )
+                        namedResp =
+                            if newTurn > 4 && modBy 4 newTurn == 0 then
+                                userName ++ ", " ++ decapitalize resp
+                            else
+                                resp
+
+                        newState =
+                            state
+                                |> (\s -> updateResponseIndex s "_default_" (idx + 1))
+                                |> (\s -> { s | turnCount = newTurn, lastKeyword = "_default_", lastResponse = namedResp })
+                    in
+                    ( namedResp, newState )
 
 
-{-| Decapitalize the first character of a string.
--}
 decapitalize : String -> String
 decapitalize str =
     case String.uncons str of
@@ -185,19 +193,18 @@ decapitalize str =
             str
 
 
-{-| Check if input is very short or meaningless (< 4 characters, no real words).
+{-| Check if input is very short AND has no recognizable keyword meaning.
+    Only truly meaningless gibberish (< 3 characters, single token).
 -}
 isVeryShortInput : String -> Bool
 isVeryShortInput input =
     let
         trimmed = String.trim input
-        wordCount = List.length (String.words trimmed)
     in
-    String.length trimmed < 4 && wordCount <= 1
+    String.length trimmed < 3
 
 
 {-| Pick a response index using turn count for pseudo-random variation.
-    Avoids picking the same index twice in a row.
 -}
 pickIndex : Int -> Int -> Int -> Int
 pickIndex total currentIdx turn =
@@ -205,14 +212,11 @@ pickIndex total currentIdx turn =
         0
     else
         let
-            -- Use a simple hash-like scramble based on turn count
             scrambled = modBy total (currentIdx + (turn * 7 + 3))
         in
         scrambled
 
 
-{-| Pick a response from a list, using index and turn for variation.
--}
 pickResponse : List String -> Int -> Int -> String
 pickResponse responses idx turn =
     let
@@ -301,6 +305,7 @@ getGoodbyeWithName lang name =
 
 {-| Find the best matching keyword for the given input.
     Keywords must appear as whole words in the input (word boundary matching).
+    Among keywords with same weight, prefer longer (more specific) keywords.
     Avoids picking the same keyword as last time when possible.
 -}
 findBestKeyword : List Keyword -> String -> String -> Maybe ( Keyword, String )
@@ -323,7 +328,16 @@ findBestKeyword keywords input lastKeyword =
                         else
                             Nothing
                     )
-                |> List.sortBy (\( kw, _ ) -> negate kw.weight)
+                -- Sort by: weight descending, then keyword length descending (more specific first)
+                |> List.sortWith
+                    (\( kw1, _ ) ( kw2, _ ) ->
+                        case compare kw2.weight kw1.weight of
+                            EQ ->
+                                compare (String.length kw2.keyword) (String.length kw1.keyword)
+
+                            other ->
+                                other
+                    )
 
         -- If possible, avoid repeating the same keyword as last turn
         nonRepeating =
@@ -349,8 +363,6 @@ containsKeywordAsWord keyword inputWords fullInput =
         List.member keyword inputWords
 
 
-{-| Try to match a keyword against input. Returns captured text if matched.
--}
 matchKeyword : Keyword -> String -> Maybe String
 matchKeyword keyword input =
     let
@@ -361,27 +373,28 @@ matchKeyword keyword input =
     List.head results
 
 
-{-| Try to match a single rule's pattern against input.
--}
 matchRule : Rule -> String -> Maybe String
 matchRule rule input =
     case rule.pattern of
         [ "*" ] ->
-            -- Matches anything
             Just input
 
         [ before, "*" ] ->
-            -- Pattern: "word *"
             let
                 prefix = String.toLower before
             in
             if String.startsWith prefix input then
                 Just (String.dropLeft (String.length prefix) input |> String.trim)
             else
-                Nothing
+                -- Also try to find the prefix anywhere in the input (for multi-clause input)
+                case findSubstringAfter prefix input of
+                    Just rest ->
+                        Just (String.trim rest)
+
+                    Nothing ->
+                        Nothing
 
         [ "*", after ] ->
-            -- Pattern: "* word"
             let
                 suffix = String.toLower after
             in
@@ -391,7 +404,6 @@ matchRule rule input =
                 Nothing
 
         [ before, "*", after ] ->
-            -- Pattern: "word * word"
             let
                 prefix = String.toLower before
                 suffix = String.toLower after
@@ -409,17 +421,47 @@ matchRule rule input =
                 Nothing
 
         [ single ] ->
-            -- Exact keyword match somewhere in input (already verified by containsKeywordAsWord)
             Just ""
 
         _ ->
             Nothing
 
 
+{-| Find a substring in the input and return everything after it.
+    Useful for matching patterns in multi-clause input like "ich weiß nicht ich fühle mich schlecht"
+-}
+findSubstringAfter : String -> String -> Maybe String
+findSubstringAfter needle haystack =
+    let
+        idx = indexOf needle haystack
+    in
+    case idx of
+        Just i ->
+            Just (String.dropLeft (i + String.length needle) haystack)
+
+        Nothing ->
+            Nothing
+
+
+{-| Simple indexOf implementation.
+-}
+indexOf : String -> String -> Maybe Int
+indexOf needle haystack =
+    indexOfHelper needle haystack 0
+
+
+indexOfHelper : String -> String -> Int -> Maybe Int
+indexOfHelper needle haystack offset =
+    if String.length haystack < String.length needle then
+        Nothing
+    else if String.startsWith needle haystack then
+        Just offset
+    else
+        indexOfHelper needle (String.dropLeft 1 haystack) (offset + 1)
+
+
 -- REFLECTIONS
 
-{-| Apply pronoun reflections to captured text.
--}
 applyReflections : List ( String, String ) -> String -> String
 applyReflections reflections text =
     let
@@ -474,7 +516,7 @@ removePunctuation : String -> String
 removePunctuation text =
     let
         maybeRegex =
-            Regex.fromString "[.,!?;:']"
+            Regex.fromString "[.,!?;:'\"]"
     in
     case maybeRegex of
         Just regex ->
@@ -482,3 +524,21 @@ removePunctuation text =
 
         Nothing ->
             text
+
+
+{-| Collapse multiple spaces into one.
+-}
+collapseSpaces : String -> String
+collapseSpaces text =
+    let
+        maybeRegex =
+            Regex.fromString "\\s+"
+    in
+    case maybeRegex of
+        Just regex ->
+            Regex.replace regex (\_ -> " ") text
+                |> String.trim
+
+        Nothing ->
+            text
+
