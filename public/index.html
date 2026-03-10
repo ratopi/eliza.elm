@@ -3,7 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="description" content="A virtual therapist chatbot based on Joseph Weizenbaum's ELIZA, implemented in Elm.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ELIZA">
     <title>ELIZA - Virtual Therapist</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
+    <link rel="apple-touch-icon" href="icons/icon-192.svg">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -36,6 +44,15 @@
             });
             window.visualViewport.addEventListener('scroll', function() {
                 document.documentElement.style.height = window.visualViewport.height + 'px';
+            });
+        }
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').then(function(registration) {
+                console.log('Service Worker registered with scope:', registration.scope);
+            }).catch(function(error) {
+                console.log('Service Worker registration failed:', error);
             });
         }
     </script>

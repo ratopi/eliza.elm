@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="24" fill="#0f172a"/>
+  <text x="96" y="115" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif" font-size="72" font-weight="800" fill="#818cf8" text-anchor="middle" letter-spacing="4">E</text>
+  <circle cx="96" cy="148" r="4" fill="#6366f1"/>
+  <circle cx="112" cy="148" r="4" fill="#6366f1"/>
+  <circle cx="80" cy="148" r="4" fill="#6366f1"/>
+</svg>
+
