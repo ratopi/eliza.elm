@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Maskable icon: safe zone is inner 80%, so key content in center -->
+  <rect width="512" height="512" fill="#0f172a"/>
+  <text x="256" y="296" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif" font-size="190" font-weight="800" fill="#818cf8" text-anchor="middle" letter-spacing="8">E</text>
+  <circle cx="256" cy="380" r="10" fill="#6366f1"/>
+  <circle cx="296" cy="380" r="10" fill="#6366f1"/>
+  <circle cx="216" cy="380" r="10" fill="#6366f1"/>
+</svg>
+
