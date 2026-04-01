@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="description" content="A virtual therapist chatbot based on Joseph Weizenbaum's ELIZA, implemented in Elm.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ELIZA">
+    <title>ELIZA - Virtual Therapist</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
+    <link rel="apple-touch-icon" href="icons/icon-192.svg">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="elm-app"></div>
+    <script src="app.js"></script>
+    <script>
+        var app = Elm.Main.init({
+            node: document.getElementById('elm-app')
+        });
+
+        // Subscribe to the scroll port from Elm
+        if (app.ports && app.ports.scrollChatToBottom) {
+            app.ports.scrollChatToBottom.subscribe(function() {
+                // Use requestAnimationFrame to ensure the DOM has been updated
+                requestAnimationFrame(function() {
+                    // Double rAF to ensure Elm's virtual DOM has patched
+                    requestAnimationFrame(function() {
+                        var chatContainer = document.getElementById('chat-container');
+                        if (chatContainer) {
+                            chatContainer.scrollTop = chatContainer.scrollHeight;
+                        }
+                    });
+                });
+            });
+        }
+        // iOS keyboard fix: ensure input stays visible when virtual keyboard opens
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', function() {
+                document.documentElement.style.height = window.visualViewport.height + 'px';
+            });
+            window.visualViewport.addEventListener('scroll', function() {
+                document.documentElement.style.height = window.visualViewport.height + 'px';
+            });
+        }
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').then(function(registration) {
+                console.log('Service Worker registered with scope:', registration.scope);
+            }).catch(function(error) {
+                console.log('Service Worker registration failed:', error);
+            });
+        }
+    </script>
+</body>
+</html>
+
